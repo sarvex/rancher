@@ -23,20 +23,22 @@ K8S_VERSION = os.environ.get('RANCHER_K8S_VERSION', "")
 
 
 def test_add_custom_host():
+    if AGENT_REG_CMD == "":
+        return
     aws_nodes = AmazonWebServices().create_multiple_nodes(
-        HOST_COUNT, random_test_name("testsa" + HOST_NAME))
-    if AGENT_REG_CMD != "":
-        for aws_node in aws_nodes:
-            additional_options = " --address " + aws_node.public_ip_address + \
-                                 " --internal-address " + \
-                                 aws_node.private_ip_address
-            if 'Administrator' == aws_node.ssh_user:
-                agent_cmd_temp = AGENT_REG_CMD.replace('| iex', ' ' + additional_options + ' | iex ')
-                agent_cmd = agent_cmd_temp + additional_options
-            else:
-                agent_cmd = AGENT_REG_CMD + additional_options
-            aws_node.execute_command(agent_cmd)
-            print("Nodes: " + aws_node.public_ip_address)
+        HOST_COUNT, random_test_name(f"testsa{HOST_NAME}")
+    )
+    for aws_node in aws_nodes:
+        additional_options = f" --address {aws_node.public_ip_address} --internal-address {aws_node.private_ip_address}"
+        if aws_node.ssh_user == 'Administrator':
+            agent_cmd_temp = AGENT_REG_CMD.replace(
+                '| iex', f' {additional_options} | iex '
+            )
+            agent_cmd = agent_cmd_temp + additional_options
+        else:
+            agent_cmd = AGENT_REG_CMD + additional_options
+        aws_node.execute_command(agent_cmd)
+        print(f"Nodes: {aws_node.public_ip_address}")
 
 
 def test_delete_keypair():
@@ -54,13 +56,14 @@ def test_deploy_rancher_server():
             'sudo docker run -d --name="rancher-server" ' \
             '--restart=unless-stopped -p 80:80 -p 443:443  ' \
             'rancher/rancher'
-    RANCHER_SERVER_CMD += ":" + RANCHER_SERVER_VERSION + " --trace"
+    RANCHER_SERVER_CMD += f":{RANCHER_SERVER_VERSION} --trace"
     print(RANCHER_SERVER_CMD)
     aws_nodes = AmazonWebServices().create_multiple_nodes(
-        1, random_test_name("testsa" + HOST_NAME))
+        1, random_test_name(f"testsa{HOST_NAME}")
+    )
     aws_nodes[0].execute_command(RANCHER_SERVER_CMD)
     time.sleep(120)
-    RANCHER_SERVER_URL = "https://" + aws_nodes[0].public_ip_address
+    RANCHER_SERVER_URL = f"https://{aws_nodes[0].public_ip_address}"
     print(RANCHER_SERVER_URL)
     wait_until_active(RANCHER_SERVER_URL, timeout=300)
 
@@ -69,16 +72,13 @@ def test_deploy_rancher_server():
     aws_nodes[0].execute_command(RANCHER_SET_DEBUG_CMD)
 
     token = set_url_password_token(RANCHER_SERVER_URL)
-    admin_client = rancher.Client(url=RANCHER_SERVER_URL + "/v3",
-                                  token=token, verify=False)
+    admin_client = rancher.Client(
+        url=f"{RANCHER_SERVER_URL}/v3", token=token, verify=False
+    )
     if AUTH_PROVIDER:
-        enable_url = \
-            RANCHER_SERVER_URL + "/v3/" + AUTH_PROVIDER + \
-            "Configs/" + AUTH_PROVIDER.lower() + "?action=testAndApply"
+        enable_url = f"{RANCHER_SERVER_URL}/v3/{AUTH_PROVIDER}Configs/{AUTH_PROVIDER.lower()}?action=testAndApply"
         auth_admin_user = load_setup_data()["admin_user"]
-        auth_user_login_url = \
-            RANCHER_SERVER_URL + "/v3-public/" + AUTH_PROVIDER + "Providers/" \
-            + AUTH_PROVIDER.lower() + "?action=login"
+        auth_user_login_url = f"{RANCHER_SERVER_URL}/v3-public/{AUTH_PROVIDER}Providers/{AUTH_PROVIDER.lower()}?action=login"
 
         if AUTH_PROVIDER == "activeDirectory":
 
@@ -107,17 +107,19 @@ def test_deploy_rancher_server():
                 FREEIPA_AUTH_USER_PASSWORD,
                 login_url=auth_user_login_url)["token"]
     else:
-        AUTH_URL = \
-            RANCHER_SERVER_URL + "/v3-public/localproviders/local?action=login"
+        AUTH_URL = f"{RANCHER_SERVER_URL}/v3-public/localproviders/local?action=login"
         user, user_token = create_user(admin_client, AUTH_URL)
 
-    env_details = "env.CATTLE_TEST_URL='" + RANCHER_SERVER_URL + "'\n"
-    env_details += "env.ADMIN_TOKEN='" + token + "'\n"
-    env_details += "env.USER_TOKEN='" + user_token + "'\n"
+    env_details = f"env.CATTLE_TEST_URL='{RANCHER_SERVER_URL}" + "'\n"
+    env_details += f"env.ADMIN_TOKEN='{token}" + "'\n"
+    env_details += f"env.USER_TOKEN='{user_token}" + "'\n"
 
     if UPDATE_KDM:
-        update_and_validate_kdm(KDM_URL, admin_token=token,
-                                rancher_api_url=RANCHER_SERVER_URL + "/v3")
+        update_and_validate_kdm(
+            KDM_URL,
+            admin_token=token,
+            rancher_api_url=f"{RANCHER_SERVER_URL}/v3",
+        )
 
     if AUTO_DEPLOY_CUSTOM_CLUSTER:
         aws_nodes = \
@@ -125,8 +127,9 @@ def test_deploy_rancher_server():
                 5, random_test_name("testcustom"))
         node_roles = [["controlplane"], ["etcd"],
                       ["worker"], ["worker"], ["worker"]]
-        client = rancher.Client(url=RANCHER_SERVER_URL + "/v3",
-                                token=user_token, verify=False)
+        client = rancher.Client(
+            url=f"{RANCHER_SERVER_URL}/v3", token=user_token, verify=False
+        )
         if K8S_VERSION != "":
             rke_config["kubernetesVersion"] = K8S_VERSION
         print("the rke config for creating the cluster:")
@@ -136,15 +139,13 @@ def test_deploy_rancher_server():
             driver="rancherKubernetesEngine",
             rancherKubernetesEngineConfig=rke_config)
         assert cluster.state == "provisioning"
-        i = 0
-        for aws_node in aws_nodes:
+        for i, aws_node in enumerate(aws_nodes):
             docker_run_cmd = \
                 get_custom_host_registration_cmd(
                     client, cluster, node_roles[i], aws_node)
             aws_node.execute_command(docker_run_cmd)
-            i += 1
         validate_cluster_state(client, cluster)
-        env_details += "env.CLUSTER_NAME='" + cluster.name + "'\n"
+        env_details += f"env.CLUSTER_NAME='{cluster.name}" + "'\n"
 
     create_config_file(env_details)
 
@@ -163,7 +164,7 @@ def test_delete_rancher_server():
             exceptionMsg = 'Timeout waiting for clusters to be removed'
             raise Exception(exceptionMsg)
     ip_address = CATTLE_TEST_URL[8:]
-    print("Ip Address:" + ip_address)
+    print(f"Ip Address:{ip_address}")
     filters = [
         {'Name': 'network-interface.addresses.association.public-ip',
          'Values': [ip_address]}]

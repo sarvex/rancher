@@ -14,7 +14,7 @@ DATA_SUBDIR = os.path.join(os.path.dirname(os.path.realpath(__file__)),
 
 def test_sonobuoy_results():
     config = base64.b64decode(RANCHER_KUBECONFIG).decode("utf-8")
-    kubeconfig = DATA_SUBDIR + "/config"
+    kubeconfig = f"{DATA_SUBDIR}/config"
     print(kubeconfig)
 
     with open(kubeconfig, 'w') as f:

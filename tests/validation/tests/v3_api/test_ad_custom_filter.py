@@ -44,14 +44,15 @@ CATTLE_AUTH_URL = \
     "/v3-public/"+AUTH_PROVIDER+"Providers/" + \
     AUTH_PROVIDER.lower()+"?action=login"
 
-CATTLE_AUTH_PROVIDER_URL = \
-    CATTLE_TEST_URL + "/v3/"+AUTH_PROVIDER+"Configs/"+AUTH_PROVIDER.lower()
+CATTLE_AUTH_PROVIDER_URL = (
+    f"{CATTLE_TEST_URL}/v3/{AUTH_PROVIDER}Configs/{AUTH_PROVIDER.lower()}"
+)
 
-CATTLE_AUTH_PRINCIPAL_URL = CATTLE_TEST_URL + "/v3/principals?action=search"
+CATTLE_AUTH_PRINCIPAL_URL = f"{CATTLE_TEST_URL}/v3/principals?action=search"
 
-CATTLE_AUTH_ENABLE_URL = CATTLE_AUTH_PROVIDER_URL + "?action=testAndApply"
+CATTLE_AUTH_ENABLE_URL = f"{CATTLE_AUTH_PROVIDER_URL}?action=testAndApply"
 
-CATTLE_AUTH_DISABLE_URL = CATTLE_AUTH_PROVIDER_URL + "?action=disable"
+CATTLE_AUTH_DISABLE_URL = f"{CATTLE_AUTH_PROVIDER_URL}?action=disable"
 
 
 def test_custom_user_and_group_filter_for_AD():
@@ -69,7 +70,7 @@ def test_custom_user_and_group_filter_for_AD():
 
 
 def disable_ad(username, token, expected_status=200):
-    headers = {'Authorization': 'Bearer ' + token}
+    headers = {'Authorization': f'Bearer {token}'}
     r = requests.post(CATTLE_AUTH_DISABLE_URL, json={
         "enabled": False,
         "username": username,
@@ -83,7 +84,7 @@ def disable_ad(username, token, expected_status=200):
 def enable_ad_with_customized_filter(username, usersearchfilter,
                                      groupsearchfilter, token,
                                      expected_status=200):
-    headers = {'Authorization': 'Bearer ' + token}
+    headers = {'Authorization': f'Bearer {token}'}
     activeDirectoryConfig = {
         "accessMode": "unrestricted",
         "userSearchFilter": usersearchfilter,
@@ -124,7 +125,7 @@ def enable_ad_with_customized_filter(username, usersearchfilter,
 
 
 def search_ad_users(searchkey, token, expected_status=200):
-    headers = {'Authorization': 'Bearer ' + token}
+    headers = {'Authorization': f'Bearer {token}'}
     r = requests.post(CATTLE_AUTH_PRINCIPAL_URL,
                       json={'name': searchkey, 'principalType': 'user',
                             'responseType': 'json'},
@@ -148,7 +149,7 @@ def search_ad_users(searchkey, token, expected_status=200):
 
 
 def search_ad_groups(searchkey, token, expected_status=200):
-    headers = {'Authorization': 'Bearer ' + token}
+    headers = {'Authorization': f'Bearer {token}'}
     r = requests.post(CATTLE_AUTH_PRINCIPAL_URL,
                       json={'name': searchkey, 'principalType': 'group',
                             'responseType': 'json'},

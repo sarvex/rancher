@@ -22,11 +22,12 @@ def test_legacy_template_migrate_and_delete(admin_mc, admin_cc,
 
     k8s_dynamic_client = CustomObjectsApi(admin_mc.k8s_client)
 
-    ns = admin_cc_client.create_namespace(name="ns-" + random_str(),
-                                          clusterId=admin_cc.cluster.id)
+    ns = admin_cc_client.create_namespace(
+        name=f"ns-{random_str()}", clusterId=admin_cc.cluster.id
+    )
     remove_resource(ns)
 
-    node_template_name = "nt-" + random_str()
+    node_template_name = f"nt-{random_str()}"
     body = {
         "metadata": {
             "name": node_template_name,
@@ -52,10 +53,11 @@ def test_legacy_template_migrate_and_delete(admin_mc, admin_cc,
         except ApiError as e:
             assert e.error.status == 403
             return False
-    id = "cattle-global-nt:nt-" + ns.id + "-" + dynamic_nt["metadata"]["name"]
+
+    id = f"cattle-global-nt:nt-{ns.id}-" + dynamic_nt["metadata"]["name"]
     legacy_id = dynamic_nt["metadata"]["name"]
     legacy_ns = dynamic_nt["metadata"]["namespace"]
-    full_legacy_id = legacy_ns + ":" + legacy_id
+    full_legacy_id = f"{legacy_ns}:{legacy_id}"
 
     # wait for node template to be migrated
     nt = wait_for(lambda: migrated_template_exists(id), fail_handler=lambda:
@@ -95,9 +97,8 @@ def test_legacy_template_migrate_and_delete(admin_mc, admin_cc,
                 continue
             if callable(d1[key]):
                 continue
-            if isinstance(d1[key], RestObject):
-                if compare(d1[key], d1[key]):
-                    continue
+            if isinstance(d1[key], RestObject) and compare(d1[key], d1[key]):
+                continue
             return False
         return True
 

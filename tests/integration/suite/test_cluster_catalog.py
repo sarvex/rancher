@@ -19,7 +19,7 @@ def test_cluster_catalog_creation(admin_mc, remove_resource,
 
     cluster_owner_client = admin_mc.client
     name = random_str()
-    template_name = "local:"+name
+    template_name = f"local:{name}"
     url = "https://github.com/mrajashree/charts.git"
     cluster_catalog = \
         cluster_owner_client.create_cluster_catalog(name=name,
@@ -105,7 +105,7 @@ def test_cluster_catalog_templates_access(admin_mc, user_factory,
 
     # Now create a cluster catalog
     name = random_str()
-    catalog_name = "local:" + name
+    catalog_name = f"local:{name}"
     url = "https://github.com/mrajashree/charts.git"
     cc = admin_client.create_cluster_catalog(name=name,
                                              branch="onlyOne",

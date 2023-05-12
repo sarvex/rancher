@@ -78,7 +78,7 @@ def test_destination_rule_on_cookie(admin_pc, remove_resource):
         projectId=admin_pc.project.id)
     remove_resource(ns)
     name = random_str()
-    cookie_name = name + "_cookie"
+    cookie_name = f"{name}_cookie"
     dr = client.create_destinationRule(
         name=name,
         namespaceId=ns.id,
@@ -156,7 +156,7 @@ def install_crd(admin_mc):
             stderr=subprocess.STDOUT, shell=True,
         )
     except subprocess.CalledProcessError as err:
-        print('kubectl error: ' + str(err.output))
+        print(f'kubectl error: {str(err.output)}')
         raise err
 
 
@@ -169,13 +169,12 @@ def teardown_module(module):
             stderr=subprocess.STDOUT, shell=True,
         )
     except subprocess.CalledProcessError as err:
-        print('kubectl error: ' + str(err.output))
+        print(f'kubectl error: {str(err.output)}')
         raise err
 
 
 def create_kubeconfig(cluster):
     generateKubeConfigOutput = cluster.generateKubeconfig()
     print(generateKubeConfigOutput.config)
-    file = open(kube_fname, "w")
-    file.write(generateKubeConfigOutput.config)
-    file.close()
+    with open(kube_fname, "w") as file:
+        file.write(generateKubeConfigOutput.config)

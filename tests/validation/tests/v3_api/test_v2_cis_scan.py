@@ -45,21 +45,21 @@ def test_install_v2_cis_benchmark():
 
     # check if CIS is already installed and uninstall the app
     check_v2_app_and_uninstall(client, CHART_NAME)
-    check_v2_app_and_uninstall(client, CHART_NAME + "-crd")
+    check_v2_app_and_uninstall(client, f"{CHART_NAME}-crd")
 
     # create namespace
     ns = "cis-operator-system"
-    command = "create namespace " + ns
+    command = f"create namespace {ns}"
     execute_kubectl_cmd(command, False)
 
     # install CIS v2
     cis_charts["annotations"] = cis_annotations
     cis_charts["values"]["global"]["cattle"]["clusterId"] = cluster_id
     cis_charts["values"]["global"]["cattle"]["clusterName"] = cluster_name
-    cis_charts["chartName"] = CHART_NAME + "-crd"
-    cis_charts["releaseName"] = CHART_NAME + "-crd"
+    cis_charts["chartName"] = f"{CHART_NAME}-crd"
+    cis_charts["releaseName"] = f"{CHART_NAME}-crd"
 
-    install_v2_app(client, rancher_repo, cis_charts, CHART_NAME + "-crd", ns)
+    install_v2_app(client, rancher_repo, cis_charts, f"{CHART_NAME}-crd", ns)
 
 
     # install app

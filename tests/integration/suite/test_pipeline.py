@@ -75,7 +75,7 @@ def test_pipeline_set_up_github_with_custom_role(admin_mc,
         userId=user.user.id)
     remove_resource(prtb_owner)
 
-    url = project.links.self + '/schemas'
+    url = f'{project.links.self}/schemas'
     user_pc = ProjectContext(None, project,
                              rancher.Client(url=url,
                                             verify=False,
@@ -144,10 +144,11 @@ def test_pipeline_run_access(admin_mc, admin_pc, user_mc, remove_resource):
     able to run a pipeline.
     """
     prtb = admin_mc.client.create_project_role_template_binding(
-        name="prtb-" + random_str(),
+        name=f"prtb-{random_str()}",
         userId=user_mc.user.id,
         projectId=admin_pc.project.id,
-        roleTemplateId="read-only")
+        roleTemplateId="read-only",
+    )
     remove_resource(prtb)
 
     pipeline = admin_pc.client.create_pipeline(

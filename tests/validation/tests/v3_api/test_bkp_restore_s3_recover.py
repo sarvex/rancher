@@ -122,8 +122,8 @@ def wait_for_cluster_unavailable_or_error(client, cluster):
     return wait_for_condition(
         client,
         cluster,
-        lambda x: x.state == "unavailable" or x.state == "error",
-        lambda x: "State is: " + x.state,
+        lambda x: x.state in ["unavailable", "error"],
+        lambda x: f"State is: {x.state}",
         timeout=DEFAULT_CLUSTER_STATE_TIMEOUT,
     )
 
@@ -148,7 +148,7 @@ def add_new_etcd_nodes(client, cluster, no_of_nodes=3):
         docker_run_cmd = \
             get_custom_host_registration_cmd(client, cluster, ["etcd"],
                                              aws_node)
-        print("Docker run command: " + docker_run_cmd)
+        print(f"Docker run command: {docker_run_cmd}")
         aws_node.roles.append("etcd")
 
         result = aws_node.execute_command(docker_run_cmd)

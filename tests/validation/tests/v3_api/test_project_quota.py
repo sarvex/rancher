@@ -35,10 +35,12 @@ def test_create_project_quota():
 
     quota = default_project_quota()
     nsquota = ns_default_quota()
-    proj = client.create_project(name='test-' + random_str(),
-                                 clusterId=cluster.id,
-                                 resourceQuota=quota,
-                                 namespaceDefaultResourceQuota=nsquota)
+    proj = client.create_project(
+        name=f'test-{random_str()}',
+        clusterId=cluster.id,
+        resourceQuota=quota,
+        namespaceDefaultResourceQuota=nsquota,
+    )
     proj = client.wait_success(proj)
 
     assert proj.resourceQuota is not None
@@ -72,10 +74,12 @@ def test_resource_quota_create_namespace_with_ns_quota():
 
     quota = default_project_quota()
     nsquota = ns_quota()
-    proj = client.create_project(name='test-' + random_str(),
-                                 clusterId=cluster.id,
-                                 resourceQuota=quota,
-                                 namespaceDefaultResourceQuota=quota)
+    proj = client.create_project(
+        name=f'test-{random_str()}',
+        clusterId=cluster.id,
+        resourceQuota=quota,
+        namespaceDefaultResourceQuota=quota,
+    )
     proj = client.wait_success(proj)
 
     assert proj.resourceQuota is not None
@@ -118,7 +122,7 @@ def test_resource_quota_create_namespace_with_ns_quota():
                                   resourceQuota=ns_quota())
     except Exception as e:
         errorstring = str(e)
-        print(str(e))
+        print(e)
     assert "MaxLimitExceeded" in errorstring
 
 def test_namespace_quota_edit(remove_resource):

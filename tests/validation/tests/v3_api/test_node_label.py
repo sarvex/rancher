@@ -130,7 +130,7 @@ def test_node_label_kubectl_add():
     node_name = node.nodeName
 
     # add label on node
-    command = "label nodes " + node_name + " " + test_label + "=" + label_value
+    command = f"label nodes {node_name} {test_label}={label_value}"
     print(command)
     execute_kubectl_cmd(command, False)
     time.sleep(2)
@@ -155,7 +155,7 @@ def test_node_label_kubectl_edit():
     node_name = node.nodeName
 
     # add label on node
-    command = "label nodes " + node_name + " " + test_label + "=" + label_value
+    command = f"label nodes {node_name} {test_label}={label_value}"
     print(command)
     execute_kubectl_cmd(command, False)
     time.sleep(2)
@@ -167,8 +167,7 @@ def test_node_label_kubectl_edit():
 
     # edit label through kubectl
     new_value = random_name()
-    command = "label nodes " + node_name + " " + \
-              test_label + "=" + new_value + " --overwrite"
+    command = f"label nodes {node_name} {test_label}={new_value} --overwrite"
     print(command)
     execute_kubectl_cmd(command, False)
     node = client.reload(node)
@@ -193,7 +192,7 @@ def test_node_label_kubectl_delete():
     node_name = node.nodeName
 
     # add label on node
-    command = "label nodes " + node_name + " " + test_label + "=" + label_value
+    command = f"label nodes {node_name} {test_label}={label_value}"
     print(command)
     execute_kubectl_cmd(command, False)
     time.sleep(2)
@@ -203,7 +202,7 @@ def test_node_label_kubectl_delete():
     validate_label_set_on_node(client, node, test_label, label_value)
 
     # remove label through kubectl
-    command = " label node " + node_name + " " + test_label + "-"
+    command = f" label node {node_name} {test_label}-"
     execute_kubectl_cmd(command, False)
     time.sleep(2)
 
@@ -220,7 +219,7 @@ def test_node_label_k_add_a_delete_k_add():
     client, node = get_node_details(cluster_detail["cluster"], cluster_detail["client"])
     node_name = node.nodeName
 
-    command = "label nodes " + node_name + " " + test_label + "=" + label_value
+    command = f"label nodes {node_name} {test_label}={label_value}"
     print(command)
     execute_kubectl_cmd(command, False)
 
@@ -260,7 +259,7 @@ def test_node_label_k_add_a_edit_k_edit():
     client, node = get_node_details(cluster_detail["cluster"], cluster_detail["client"])
     node_name = node.nodeName
 
-    command = "label nodes " + node_name + " " + test_label + "=" + label_value
+    command = f"label nodes {node_name} {test_label}={label_value}"
     execute_kubectl_cmd(command, False)
 
     # Label should be added
@@ -283,8 +282,7 @@ def test_node_label_k_add_a_edit_k_edit():
 
     # edit label through kubectl
     new_value_2 = random_name()
-    command = "label nodes " + node_name + " " + \
-              test_label + "=" + new_value_2 + " --overwrite"
+    command = f"label nodes {node_name} {test_label}={new_value_2} --overwrite"
     print(command)
     execute_kubectl_cmd(command, False)
     time.sleep(2)
@@ -320,7 +318,7 @@ def test_node_label_a_add_k_delete_a_add():
     validate_label_set_on_node(client, node, test_label, label_value)
 
     # delete label
-    command = " label node " + node_name + " " + test_label + "-"
+    command = f" label node {node_name} {test_label}-"
     execute_kubectl_cmd(command, False)
     time.sleep(2)
 
@@ -367,8 +365,7 @@ def test_node_label_a_add_k_edit_a_edit():
 
     # edit label through kubectl
     new_value = random_name()
-    command = "label nodes " + node_name + " " + \
-              test_label + "=" + new_value + " --overwrite"
+    command = f"label nodes {node_name} {test_label}={new_value} --overwrite"
     print(command)
     execute_kubectl_cmd(command, False)
     node = client.reload(node)
@@ -442,15 +439,12 @@ def test_node_label_custom_add_edit_addnode():
         aws_nodes = \
         AmazonWebServices().create_multiple_nodes(
             1, random_test_name(HOST_NAME))
-    for node in aws_nodes:
-        aws_nodes_list.append(node)
-
+    aws_nodes_list.extend(iter(aws_nodes))
     aws_node = aws_nodes[0]
     docker_run_cmd = get_custom_host_registration_cmd(client, cluster,
                                                       ["controlplane"],
                                                       aws_node)
-    docker_run_cmd = \
-        docker_run_cmd + " --label " + test_label + "=" + label_value
+    docker_run_cmd = f"{docker_run_cmd} --label {test_label}={label_value}"
     aws_node.execute_command(docker_run_cmd)
     wait_for_cluster_node_count(client, cluster, 2)
     cluster = validate_cluster_state(client, cluster,
@@ -495,13 +489,14 @@ def test_node_label_node_template_add():
 
     # validate labels on nodes
     for node in nodes:
-        if node.nodeName not in existing_labels.keys():
-            # check if label is set on node
-            validate_label_set_on_node(client, node, test_label, label_value)
-        else:
+        if node.nodeName in existing_labels:
             # check if the labels on the existing nodes are intact
             assert existing_labels[node.nodeName] == node.labels.data_dict(), \
                 "Labels on existing nodes have changed"
+
+        else:
+            # check if label is set on node
+            validate_label_set_on_node(client, node, test_label, label_value)
 
 
 @pytest.mark.run(after='test_node_label_node_template_add')
@@ -552,13 +547,14 @@ def test_node_label_node_template_edit():
 
     # validate labels on nodes
     for node in nodes:
-        if node.nodeName not in existing_labels.keys():
-            # check if label is set on node
-            validate_label_set_on_node(client, node, test_label, new_value)
-        else:
+        if node.nodeName in existing_labels:
             # check if the labels on the existing nodes are intact
             assert existing_labels[node.nodeName] == node.labels.data_dict(), \
                 "Labels on existing nodes have changed"
+
+        else:
+            # check if label is set on node
+            validate_label_set_on_node(client, node, test_label, new_value)
 
 
 @pytest.mark.run(after='test_node_label_node_template_edit')
@@ -574,8 +570,7 @@ def test_node_label_node_template_delete():
     node_template = cluster_node_template["node_template"]
     do_cloud_credential = cluster_node_template["do_cloud_credential"]
     test_label = cluster_node_template["test_label"]
-    create_kubeconfig(cluster_node_template["cluster"])
-
+    create_kubeconfig(cluster)
     nodes = client.list_node(clusterId=cluster.id).data
 
     existing_labels = {}
@@ -605,14 +600,15 @@ def test_node_label_node_template_delete():
 
     # validate labels on nodes
     for node in nodes:
-        if node.nodeName not in existing_labels.keys():
-            node_labels = node.labels.data_dict()
-            assert test_label not in node_labels, \
-                "Label is NOT deleted on the node"
-        else:
+        if node.nodeName in existing_labels:
             # check if the labels on the existing nodes are intact
             assert existing_labels[node.nodeName] == node.labels.data_dict(), \
                 "Labels on existing nodes have changed"
+
+        else:
+            node_labels = node.labels.data_dict()
+            assert test_label not in node_labels, \
+                "Label is NOT deleted on the node"
 
 
 def test_node_label_node_template_edit_api():
@@ -863,7 +859,7 @@ def test_rbac_node_label_add_kubectl(role):
     create_kubeconfig(cluster[0])
 
     # add label on node
-    command = "label nodes " + node_name + " " + test_label + "=" + label_value
+    command = f"label nodes {node_name} {test_label}={label_value}"
 
     if role == CLUSTER_OWNER:
         execute_kubectl_cmd(command, False)
@@ -944,10 +940,7 @@ def create_project_client(request):
 def check_cluster_deleted(client):
     def _find_condition(resource):
         cluster = client.reload(resource)
-        if len(cluster["data"]) == 0:
-            return True
-        else:
-            return False
+        return len(cluster["data"]) == 0
 
     return _find_condition
 
@@ -956,10 +949,7 @@ def check_label_added(test_label):
     def _find_condition(resource):
         node_labels = resource.labels.data_dict()
 
-        if test_label in node_labels:
-            return True
-        else:
-            return False
+        return test_label in node_labels
 
     return _find_condition
 
@@ -968,10 +958,7 @@ def check_label_removed(test_label):
     def _find_condition(resource):
         node_labels = resource.labels.data_dict()
 
-        if test_label not in node_labels:
-            return True
-        else:
-            return False
+        return test_label not in node_labels
 
     return _find_condition
 
@@ -993,7 +980,7 @@ def validate_label_set_on_node(client, node, test_label, label_value):
 
     # check via kubectl
     node_name = node.nodeName
-    command = " get nodes " + node_name
+    command = f" get nodes {node_name}"
     node_detail = execute_kubectl_cmd(command)
     print(node_detail["metadata"]["labels"])
     assert test_label in node_detail["metadata"]["labels"], \
@@ -1016,7 +1003,7 @@ def validate_label_deleted_on_node(client, node, test_label):
 
     # check via kubectl
     node_name = node.nodeName
-    command = " get nodes " + node_name
+    command = f" get nodes {node_name}"
     print(command)
     node_detail = execute_kubectl_cmd(command)
     print(node_detail["metadata"]["labels"])
@@ -1031,7 +1018,6 @@ def add_node_cluster(node_template, cluster):
     :return: cluster, node_pools
     """
     client = get_user_client()
-    nodes = []
     node_name = random_node_name()
     node = {"hostnamePrefix": node_name,
             "nodeTemplateId": node_template.id,
@@ -1040,7 +1026,7 @@ def add_node_cluster(node_template, cluster):
             "worker": True,
             "quantity": 1,
             "clusterId": None}
-    nodes.append(node)
+    nodes = [node]
     node_pools = []
     for node in nodes:
         node["clusterId"] = cluster.id
@@ -1080,7 +1066,6 @@ def create_cluster_node_template_label(test_label, label_value):
         "Label is not set on node template"
     assert node_template["labels"][test_label] == label_value
 
-    nodes = []
     node_name = random_node_name()
     node = {"hostnamePrefix": node_name,
             "nodeTemplateId": node_template.id,
@@ -1089,7 +1074,7 @@ def create_cluster_node_template_label(test_label, label_value):
             "worker": True,
             "quantity": 1,
             "clusterId": None}
-    nodes.append(node)
+    nodes = [node]
     cluster = client.create_cluster(
         name=random_name(),
         rancherKubernetesEngineConfig=rke_config)
@@ -1137,17 +1122,14 @@ def create_custom_node_label(node_roles, test_label,
                                     driver="rancherKubernetesEngine",
                                     rancherKubernetesEngineConfig=rke_config)
     assert cluster.state == "provisioning"
-    i = 0
-    for aws_node in aws_nodes:
+    for i, aws_node in enumerate(aws_nodes):
         docker_run_cmd = \
             get_custom_host_registration_cmd(client, cluster, node_roles[i],
                                              aws_node)
         for nr in node_roles[i]:
             aws_node.roles.append(nr)
-        docker_run_cmd = docker_run_cmd + " --label " + \
-                         test_label + "=" + label_value
+        docker_run_cmd = f"{docker_run_cmd} --label {test_label}={label_value}"
         aws_node.execute_command(docker_run_cmd)
-        i += 1
     cluster = validate_cluster_state(client, cluster)
     return cluster, aws_nodes
 

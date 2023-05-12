@@ -122,10 +122,7 @@ def test_auth_config_secrets(admin_mc):
 
 def key_secret_creation(k8sclient):
     secrets = k8sclient.list_namespaced_secret("cattle-global-data")
-    for s in secrets.items:
-        if s.metadata.name == "pingconfig-spkey":
-            return True
-    return False
+    return any(s.metadata.name == "pingconfig-spkey" for s in secrets.items)
 
 
 def test_auth_label(admin_mc, user_factory):
@@ -146,9 +143,8 @@ def user_token_creation(k8s_client, user_id):
         "v3",
         "tokens"
     )
-    user_token = [
+    if user_token := [
         token for token in tokens["items"] if token['userId'] == user_id
-    ]
-    if len(user_token) > 0:
+    ]:
         return user_token[0]
     return False

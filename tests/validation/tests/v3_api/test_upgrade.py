@@ -59,16 +59,16 @@ ingress_name2_validate = validate_prefix + ingress_name2
 ingress_wlname1_validate = validate_prefix + ingress_wlname1
 ingress_wlname2_validate = validate_prefix + ingress_wlname2
 
-secret_name = create_prefix + "-testsecret"
-secret_wl_name1_create = create_prefix + "-testwl1withsec"
-secret_wl_name2_create = create_prefix + "-testwl2withsec"
+secret_name = f"{create_prefix}-testsecret"
+secret_wl_name1_create = f"{create_prefix}-testwl1withsec"
+secret_wl_name2_create = f"{create_prefix}-testwl2withsec"
 
-secret_wl_name1_validate = validate_prefix + "-testwl1withsec"
-secret_wl_name2_validate = validate_prefix + "-testwl2withsec"
+secret_wl_name1_validate = f"{validate_prefix}-testwl1withsec"
+secret_wl_name2_validate = f"{validate_prefix}-testwl2withsec"
 
-app_ns = create_prefix + "-app-ns"
-app_create_name = create_prefix + "-app"
-app_validate_name = validate_prefix + "-app"
+app_ns = f"{create_prefix}-app-ns"
+app_create_name = f"{create_prefix}-app"
+app_validate_name = f"{validate_prefix}-app"
 # the pre_upgrade_externalId is for launching an app
 pre_upgrade_externalId = \
     create_catalog_external_id("test-catalog", "mysql", "1.3.1")
@@ -461,9 +461,7 @@ def validate_service_discovery_upgrade(sd_record_name, workload_names):
     expected_ips = []
     for wl in target_wls:
         pods = p_client.list_pod(workloadId=wl["id"]).data
-        for pod in pods:
-            expected_ips.append(pod["status"]["podIp"])
-
+        expected_ips.extend(pod["status"]["podIp"] for pod in pods)
     assert len(testclient_pods) > 0
     for pod in testclient_pods:
         validate_dns_record(pod, record, expected_ips)
@@ -474,10 +472,10 @@ def create_validate_wokloads_with_secret():
     p_client = namespace["p_client"]
     ns = namespace["ns"]
 
-    secret_name = create_prefix + "-testsecret"
+    secret_name = f"{create_prefix}-testsecret"
 
-    secret_wl_name_create1 = create_prefix + "-testwl1withsec"
-    secret_wl_name_create2 = create_prefix + "-testwl2withsec"
+    secret_wl_name_create1 = f"{create_prefix}-testwl1withsec"
+    secret_wl_name_create2 = f"{create_prefix}-testwl2withsec"
 
     secret = create_secret(keyvaluepair, p_client=p_client, name=secret_name)
     create_and_validate_workload_with_secret_as_volume(
@@ -520,7 +518,7 @@ def create_project_resources():
     # Create pods in existing namespace and new namespace that will be used
     # as test clients from which DNS resolution will be tested
 
-    wlname = create_prefix + "-testsdclient"
+    wlname = f"{create_prefix}-testsdclient"
 
     con = [{"name": "test1",
             "image": TEST_IMAGE}]
@@ -577,14 +575,14 @@ def validate_existing_project_resources():
     ns2 = nss[0]
 
     # Get existing SD client pods
-    workload_name = validate_prefix + "-testsdclient"
+    workload_name = f"{validate_prefix}-testsdclient"
     workloads = p_client.list_workload(name=workload_name,
                                        namespaceId=ns.id).data
     assert len(workloads) == 1
     wl1_pods = p_client.list_pod(workloadId=workloads[0].id).data
     assert len(wl1_pods) == 1
 
-    workload_name = validate_prefix + "-testsdclient"
+    workload_name = f"{validate_prefix}-testsdclient"
 
     workloads = p_client.list_workload(name=workload_name,
                                        namespaceId=ns2.id).data
@@ -618,18 +616,16 @@ def upgrade_rancher_server(serverIp,
     if serverIp.startswith('https://'):
         serverIp = serverIp[8:]
 
-    stopCommand = "docker stop " + containerName
+    stopCommand = f"docker stop {containerName}"
     print(exec_shell_command(serverIp, 22, stopCommand, "",
           sshUser, sshKeyPath))
 
-    createVolumeCommand = "docker create --volumes-from " + containerName + \
-                          " --name rancher-data rancher/rancher:" + \
-                          rancherVersion
+    createVolumeCommand = f"docker create --volumes-from {containerName} --name rancher-data rancher/rancher:{rancherVersion}"
 
     print(exec_shell_command(serverIp, 22, createVolumeCommand, "",
           sshUser, sshKeyPath))
 
-    removeCommand = "docker rm " + containerName
+    removeCommand = f"docker rm {containerName}"
     print(exec_shell_command(serverIp, 22, removeCommand, "",
           sshUser, sshKeyPath))
 
@@ -644,8 +640,7 @@ def upgrade_rancher_server(serverIp,
 
 
 def upgrade_cluster():
-    print("Upgrading cluster {} to version {}".format(
-        CLUSTER_NAME, CLUSTER_VERSION))
+    print(f"Upgrading cluster {CLUSTER_NAME} to version {CLUSTER_VERSION}")
     client, cluster = get_user_client_and_cluster()
     if "k3sConfig" in cluster:
         k3s_config = cluster.k3sConfig
@@ -668,9 +663,7 @@ def wait_for_ready_nodes():
     client, cluster = get_user_client_and_cluster()
     start = time.time()
     nodes = client.list_node(clusterId=cluster.id).data
-    unready_nodes = []
-    for node in nodes:
-        unready_nodes.append(node.id)
+    unready_nodes = [node.id for node in nodes]
     while unready_nodes and time.time() - start < MACHINE_TIMEOUT:
         nodes = client.list_node(clusterId=cluster.id).data
         for node in nodes:

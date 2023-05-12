@@ -228,16 +228,14 @@ def create_node_template_do(client, cloud_credential=None):
 
 def create_cloud_credential_do(client):
     do_cloud_credential_config = {"accessToken": DO_ACCESSKEY}
-    do_cloud_credential = client.create_cloud_credential(
+    return client.create_cloud_credential(
         digitaloceancredentialConfig=do_cloud_credential_config
     )
-    return do_cloud_credential
 
 
 def create_and_validate_do_cluster(node_template,
                                    rancherKubernetesEngineConfig=rke_config,
                                    attemptDelete=True):
-    nodes = []
     node_name = random_node_name()
     node = {"hostnamePrefix": node_name,
             "nodeTemplateId": node_template.id,
@@ -246,7 +244,7 @@ def create_and_validate_do_cluster(node_template,
             "worker": True,
             "quantity": 1,
             "clusterId": None}
-    nodes.append(node)
+    nodes = [node]
     cluster, node_pools = create_and_validate_cluster(
         user_clients["admin"], nodes, rancherKubernetesEngineConfig,
         clusterName=random_name())

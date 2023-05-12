@@ -15,8 +15,7 @@ def extract_file_results_path(logs):
     for line in log_lines:
         if "Results available at" in line:
             path_line = line.split(' ')
-            abs_file_path = path_line[-1].replace('"', '')
-            return abs_file_path
+            return path_line[-1].replace('"', '')
     else:
         raise Exception(
             "Unable to find test result file in logs: {0}".format(logs))
@@ -26,7 +25,7 @@ def delete_all_jobs(kubectl):
     namespaces = kubectl.list_namespaces()
     for namespace in namespaces:
         result = kubectl.delete_resourse("jobs", namespace=namespace, all=True)
-        assert result.ok, "{}".format(result)
+        assert result.ok, f"{result}"
 
 
 def run_conformance(kubectl, kube_config):
@@ -48,7 +47,7 @@ def run_conformance(kubectl, kube_config):
     test_results_path = extract_file_results_path(result.stdout)
     result = kubectl.cp_from_pod('sonobuoy', 'sonobuoy', test_results_path,
                                  './conformance_results.tar.gz')
-    assert result.ok, "{}".format(result)
+    assert result.ok, f"{result}"
 
 
 def test_run_conformance_from_config(kubectl):

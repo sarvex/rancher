@@ -9,9 +9,10 @@ def assert_has_error_message(admin_mc, remove_resource, eks, message):
 
     def get_provisioned_type(cluster):
         for condition in cluster.conditions:
-            if condition.type == "Provisioned":
-                if hasattr(condition, 'message'):
-                    return condition.message
+            if condition.type == "Provisioned" and hasattr(
+                condition, 'message'
+            ):
+                return condition.message
         return None
 
     def has_provision_status():
@@ -23,9 +24,11 @@ def assert_has_error_message(admin_mc, remove_resource, eks, message):
 
     def has_error_message():
         for condition in cluster.conditions:
-            if condition.type == "Provisioned":
-                if getattr(condition, 'message') == message:
-                    return True
+            if (
+                condition.type == "Provisioned"
+                and getattr(condition, 'message') == message
+            ):
+                return True
 
         return False
 

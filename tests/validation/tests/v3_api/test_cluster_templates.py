@@ -54,13 +54,15 @@ def setup(request):
 def get_k8s_versionlist():
 
     # Get the list of K8s version supported by the rancher server
-    headers = {"Content-Type": "application/json",
-               "Accept": "application/json",
-               "Authorization": "Bearer " + ADMIN_TOKEN}
+    headers = {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "Authorization": f"Bearer {ADMIN_TOKEN}",
+    }
     json_data = {
         'responseType': 'json'
     }
-    settings_url = CATTLE_TEST_URL + "/v3/settings/k8s-versions-current"
+    settings_url = f"{CATTLE_TEST_URL}/v3/settings/k8s-versions-current"
     response = requests.get(settings_url, json=json_data,
                             verify=False, headers=headers)
     json_response = (json.loads(response.content))
@@ -73,7 +75,7 @@ def get_k8s_versionlist():
 def get_cluster_config(k8sversion, enableMonitoring="false"):
 
     rke_config = getRKEConfig(k8sversion)
-    cluster_config = {
+    return {
         "dockerRootDir": "/var/lib/docker123",
         "enableClusterAlerting": "false",
         "enableClusterMonitoring": enableMonitoring,
@@ -81,17 +83,16 @@ def get_cluster_config(k8sversion, enableMonitoring="false"):
         "type": "clusterSpecBase",
         "localClusterAuthEndpoint": {
             "enabled": "true",
-            "type": "localClusterAuthEndpoint"
+            "type": "localClusterAuthEndpoint",
         },
-        "rancherKubernetesEngineConfig": rke_config
+        "rancherKubernetesEngineConfig": rke_config,
     }
-    return cluster_config
 
 
 def get_cisscan_enabled_clusterconfig(k8sversion):
     rke_config = getRKEConfig(k8sversion)
 
-    cluster_config = {
+    return {
         "dockerRootDir": "/var/lib/docker123",
         "enableClusterAlerting": "false",
         "enableClusterMonitoring": "false",
@@ -99,7 +100,7 @@ def get_cisscan_enabled_clusterconfig(k8sversion):
         "type": "clusterSpecBase",
         "localClusterAuthEndpoint": {
             "enabled": "true",
-            "type": "localClusterAuthEndpoint"
+            "type": "localClusterAuthEndpoint",
         },
         "scheduledClusterScan": {
             "enabled": "true",
@@ -110,20 +111,19 @@ def get_cisscan_enabled_clusterconfig(k8sversion):
                     "overrideBenchmarkVersion": CIS_SCAN_PROFILE,
                     "overrideSkip": "None",
                     "profile": "permissive",
-                    "type": "/v3/schemas/cisScanConfig"
+                    "type": "/v3/schemas/cisScanConfig",
                 },
-                "type": "/v3/schemas/clusterScanConfig"
+                "type": "/v3/schemas/clusterScanConfig",
             },
             "scheduleConfig": {
                 "cronSchedule": "0 */1 * * *",
                 "retention": 24,
-                "type": "/v3/schemas/scheduledClusterScanConfig"
+                "type": "/v3/schemas/scheduledClusterScanConfig",
             },
-            "type": "/v3/schemas/scheduledClusterScan"
+            "type": "/v3/schemas/scheduledClusterScan",
         },
-        "rancherKubernetesEngineConfig": rke_config
+        "rancherKubernetesEngineConfig": rke_config,
     }
-    return cluster_config
 
 
 def test_cluster_template_create_with_questions():
@@ -484,15 +484,18 @@ def test_cluster_template_enforcement_on_admin(request):
     # As an admin turn ON enforcement and ensure that admin can create clusters
     # using rke config and also using rke template
     try:
-        enforcement_settings_url = CATTLE_TEST_URL + \
-            "/v3/settings/cluster-template-enforcement"
         data_test = {
             "name": "cluster-template-enforcement",
             "value": "true"
         }
-        headers = {"Content-Type": "application/json",
-                   "Accept": "application/json",
-                   "Authorization": "Bearer " + ADMIN_TOKEN}
+        headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "Authorization": f"Bearer {ADMIN_TOKEN}",
+        }
+        enforcement_settings_url = (
+            f"{CATTLE_TEST_URL}/v3/settings/cluster-template-enforcement"
+        )
         response = requests.put(enforcement_settings_url, json=data_test,
                                 verify=False, headers=headers)
         print(response.content)
@@ -528,7 +531,6 @@ def test_cluster_template_enforcement_on_admin(request):
             userToken=ADMIN_TOKEN)
         check_cluster_version(cluster, k8sversionlist[0])
 
-    # Reset the enforcement flag to false
     finally:
 
         data_test = {
@@ -555,15 +557,18 @@ def test_cluster_template_enforcement_on_stduser():
     cluster_config1 = get_cluster_config(k8sversionlist[0])
     rke_config = getRKEConfig(k8sversionlist[0])
     try:
-        enforcement_settings_url = CATTLE_TEST_URL + \
-            "/v3/settings/cluster-template-enforcement"
         data_test = {
             "name": "cluster-template-enforcement",
             "value": "true"
         }
-        headers = {"Content-Type": "application/json",
-                   "Accept": "application/json",
-                   "Authorization": "Bearer " + ADMIN_TOKEN}
+        headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "Authorization": f"Bearer {ADMIN_TOKEN}",
+        }
+        enforcement_settings_url = (
+            f"{CATTLE_TEST_URL}/v3/settings/cluster-template-enforcement"
+        )
         response = requests.put(enforcement_settings_url, json=data_test,
                                 verify=False, headers=headers)
         print(response.content)
@@ -602,7 +607,6 @@ def test_cluster_template_enforcement_on_stduser():
         assert e.value.error.status == 422
         assert e.value.error.code == "MissingRequired"
 
-    # Reset the enforcement flag to false
     finally:
         data_test = {
             "name": "cluster-template-enforcement",
@@ -771,7 +775,7 @@ def test_cluster_template_create_update_with_monitoring():
 
     if MONITORING_VERSION == "":
         MONITORING_VERSION = monitoring_template.defaultVersion
-    print("MONITORING_VERSION=" + MONITORING_VERSION)
+    print(f"MONITORING_VERSION={MONITORING_VERSION}")
 
     # Enable cluster monitoring using the standard user client
     if cluster["enableClusterMonitoring"] is False:
@@ -1024,7 +1028,6 @@ def create_node_cluster(userclient, name, nodecount=1, nodesize="4gb",
                 clusterTemplateRevisionId=clusterTemplateRevisionId,
                 answers=answers)
     nodetemplate = node_template_digocean(client, nodesize)
-    nodes = []
     node = {"hostnamePrefix": random_test_name("test-auto"),
             "nodeTemplateId": nodetemplate.id,
             "requestedHostname": "test-auto-template",
@@ -1033,7 +1036,7 @@ def create_node_cluster(userclient, name, nodecount=1, nodesize="4gb",
             "worker": True,
             "quantity": nodecount,
             "clusterId": None}
-    nodes.append(node)
+    nodes = [node]
     node_pools = []
     for node in nodes:
         node["clusterId"] = cluster.id
@@ -1053,7 +1056,6 @@ def create_node_cluster(userclient, name, nodecount=1, nodesize="4gb",
         node_pools.append(node_pool)
     cluster = validate_cluster(client, cluster, userToken=userToken)
     nodes = client.list_node(clusterId=cluster.id).data
-    assert len(nodes) == len(nodes)
     for node in nodes:
         assert node.state == "active"
 
@@ -1061,30 +1063,22 @@ def create_node_cluster(userclient, name, nodecount=1, nodesize="4gb",
 
 
 def getRKEConfig(k8sversion):
-    rke_config = {
+    return {
         "addonJobTimeout": 30,
         "ignoreDockerVersion": "true",
         "sshAgentAuth": "false",
         "type": "rancherKubernetesEngineConfig",
         "kubernetesVersion": k8sversion,
-        "authentication": {
-            "strategy": "x509",
-            "type": "authnConfig"
-        },
+        "authentication": {"strategy": "x509", "type": "authnConfig"},
         "network": {
             "plugin": "canal",
             "type": "networkConfig",
-            "options": {
-                "flannel_backend_type": "vxlan"
-            }
+            "options": {"flannel_backend_type": "vxlan"},
         },
-        "ingress": {
-            "provider": "nginx",
-            "type": "ingressConfig"
-        },
+        "ingress": {"provider": "nginx", "type": "ingressConfig"},
         "monitoring": {
             "provider": "metrics-server",
-            "type": "monitoringConfig"
+            "type": "monitoringConfig",
         },
         "services": {
             "type": "rkeConfigServices",
@@ -1092,13 +1086,13 @@ def getRKEConfig(k8sversion):
                 "alwaysPullImages": "false",
                 "podSecurityPolicy": "false",
                 "serviceNodePortRange": "30000-32767",
-                "type": "kubeAPIService"
+                "type": "kubeAPIService",
             },
             "etcd": {
                 "creation": "12h",
                 "extraArgs": {
                     "heartbeat-interval": 500,
-                    "election-timeout": 5000
+                    "election-timeout": 5000,
                 },
                 "retention": "72h",
                 "snapshot": "false",
@@ -1113,10 +1107,9 @@ def getRKEConfig(k8sversion):
                         "accessKey": AWS_ACCESS_KEY_ID,
                         "secretKey": AWS_SECRET_ACCESS_KEY,
                         "bucketName": "test-auto-s3",
-                        "endpoint": "s3.amazonaws.com"
-                    }
-                }
-            }
-        }
+                        "endpoint": "s3.amazonaws.com",
+                    },
+                },
+            },
+        },
     }
-    return rke_config

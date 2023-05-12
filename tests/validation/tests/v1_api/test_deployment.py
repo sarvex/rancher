@@ -29,7 +29,7 @@ def test_deployment():
     template["spec"]["template"]["spec"]["containers"][0]["image"] = TEST_IMAGE_V1
     template["spec"]["template"]["spec"]["containers"][0]["name"] = name
     # set label and selector
-    label_value = "apps.deployment-{}-{}".format(ns.id, name)
+    label_value = f"apps.deployment-{ns.id}-{name}"
     labels = template["spec"]["template"]["metadata"]["labels"]
     labels["workload.user.cattle.io/workloadselector"] = label_value
     matches = template["spec"]["selector"]["matchLabels"]

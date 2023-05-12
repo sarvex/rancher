@@ -12,11 +12,12 @@ def test_cannot_target_users_and_group(admin_mc, remove_resource):
 
     with pytest.raises(ApiError) as e:
         crtb = admin_client.create_cluster_role_template_binding(
-            name="crtb-"+random_str(),
+            name=f"crtb-{random_str()}",
             clusterId="local",
             userId=admin_mc.user.id,
             groupPrincipalId="someauthprovidergroupid",
-            roleTemplateId="clustercatalogs-view")
+            roleTemplateId="clustercatalogs-view",
+        )
         remove_resource(crtb)
     assert e.value.error.status == 422
     assert "must target a user [userId]/[userPrincipalId] OR a group " \
@@ -29,9 +30,10 @@ def test_must_have_target(admin_mc, remove_resource):
 
     with pytest.raises(ApiError) as e:
         crtb = admin_client.create_cluster_role_template_binding(
-            name="crtb-" + random_str(),
+            name=f"crtb-{random_str()}",
             clusterId="local",
-            roleTemplateId="clustercatalogs-view")
+            roleTemplateId="clustercatalogs-view",
+        )
         remove_resource(crtb)
     assert e.value.error.status == 422
     assert "must target a user [userId]/[userPrincipalId] OR a group " \
@@ -42,10 +44,11 @@ def test_cannot_update_subjects_or_cluster(admin_mc, remove_resource):
     """Asserts non-metadata fields cannot be updated"""
     admin_client = admin_mc.client
     old_crtb = admin_client.create_cluster_role_template_binding(
-        name="crtb-" + random_str(),
+        name=f"crtb-{random_str()}",
         clusterId="local",
         userId=admin_mc.user.id,
-        roleTemplateId="clustercatalogs-view")
+        roleTemplateId="clustercatalogs-view",
+    )
     remove_resource(old_crtb)
 
     wait_for(lambda: admin_client.reload(old_crtb).userPrincipalId is not None)

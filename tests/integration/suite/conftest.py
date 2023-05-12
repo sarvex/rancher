@@ -39,9 +39,9 @@ def get_ip():
 
 
 IP = get_ip()
-SERVER_URL = 'https://' + IP + ':8443'
-BASE_URL = SERVER_URL + '/v3'
-AUTH_URL = BASE_URL + '-public/localproviders/local?action=login'
+SERVER_URL = f'https://{IP}:8443'
+BASE_URL = f'{SERVER_URL}/v3'
+AUTH_URL = f'{BASE_URL}-public/localproviders/local?action=login'
 DEFAULT_TIMEOUT = 120
 DEFAULT_CATALOG = "https://github.com/rancher/integration-test-charts"
 WAIT_HTTP_ERROR_CODES = [404, 405]
@@ -122,7 +122,7 @@ def admin_cc(admin_mc):
 
 def cluster_and_client(cluster_id, mgmt_client):
     cluster = mgmt_client.by_id_cluster(cluster_id)
-    url = cluster.links.self + '/schemas'
+    url = f'{cluster.links.self}/schemas'
     client = rancher.Client(url=url,
                             verify=False,
                             token=mgmt_client.token)
@@ -131,14 +131,20 @@ def cluster_and_client(cluster_id, mgmt_client):
 
 def user_project_client(user, project):
     """Returns a project level client for the user"""
-    return rancher.Client(url=project.links.self+'/schemas', verify=False,
-                          token=user.client.token)
+    return rancher.Client(
+        url=f'{project.links.self}/schemas',
+        verify=False,
+        token=user.client.token,
+    )
 
 
 def user_cluster_client(user, cluster):
     """Returns a cluster level client for the user"""
-    return rancher.Client(url=cluster.links.self+'/schemas', verify=False,
-                          token=user.client.token)
+    return rancher.Client(
+        url=f'{cluster.links.self}/schemas',
+        verify=False,
+        token=user.client.token,
+    )
 
 
 @pytest.fixture
@@ -148,18 +154,20 @@ def admin_pc_factory(admin_cc, remove_resource):
     when this fixture is cleaned up."""
     def _admin_pc():
         admin = admin_cc.management.client
-        p = admin.create_project(name='test-' + random_str(),
-                                 clusterId=admin_cc.cluster.id)
+        p = admin.create_project(
+            name=f'test-{random_str()}', clusterId=admin_cc.cluster.id
+        )
         p = admin.wait_success(p)
         wait_for_condition("BackingNamespaceCreated", "True",
                            admin_cc.management.client, p)
         assert p.state == 'active'
         remove_resource(p)
         p = admin.reload(p)
-        url = p.links.self + '/schemas'
+        url = f'{p.links.self}/schemas'
         return ProjectContext(admin_cc, p, rancher.Client(url=url,
                                                           verify=False,
                                                           token=admin.token))
+
     return _admin_pc
 
 
@@ -176,7 +184,7 @@ def admin_system_pc(admin_mc):
     plist = admin.list_project(name='System', clusterId='local')
     assert len(plist) == 1
     p = plist.data[0]
-    url = p.links.self + '/schemas'
+    url = f'{p.links.self}/schemas'
     return ProjectContext(admin_cc, p, rancher.Client(url=url,
                                                       verify=False,
                                                       token=admin.token))
@@ -307,7 +315,7 @@ def dind_cc(request, admin_mc):
         name=cluster.name,
         localClusterAuthEndpoint={
             'enabled': True,
-            'fqdn': node_ip + ':6443',
+            'fqdn': f'{node_ip}:6443',
             'caCerts': cluster.caCert,
         },
     )
@@ -325,8 +333,7 @@ def wait_for(callback, timeout=DEFAULT_TIMEOUT, fail_handler=None):
         if time.time() - start > timeout:
             exception_msg = 'Timeout waiting for condition.'
             if fail_handler:
-                exception_msg = exception_msg + ' Fail handler message: ' + \
-                    fail_handler()
+                exception_msg = f'{exception_msg} Fail handler message: {fail_handler()}'
             raise Exception(exception_msg)
         ret = callback()
     return ret
@@ -337,8 +344,7 @@ def _sleep_time():
     while True:
         yield sleep
         sleep *= 2
-        if sleep > 1:
-            sleep = 1
+        sleep = min(sleep, 1)
 
 
 def wait_until_available(client, obj, timeout=DEFAULT_TIMEOUT):
@@ -347,8 +353,7 @@ def wait_until_available(client, obj, timeout=DEFAULT_TIMEOUT):
     while True:
         time.sleep(sleep)
         sleep *= 2
-        if sleep > 2:
-            sleep = 2
+        sleep = min(sleep, 2)
         try:
             obj = client.reload(obj)
         except ApiError as e:
@@ -358,8 +363,7 @@ def wait_until_available(client, obj, timeout=DEFAULT_TIMEOUT):
             return obj
         delta = time.time() - start
         if delta > timeout:
-            msg = 'Timeout waiting for [{}:{}] for condition after {}' \
-                  ' seconds'.format(obj.type, obj.id, delta)
+            msg = f'Timeout waiting for [{obj.type}:{obj.id}] for condition after {delta} seconds'
             raise Exception(msg)
 
 
@@ -416,9 +420,12 @@ def raw_remove_custom_resource(admin_mc, request):
             api_version = resource["apiVersion"]
             api_version_parts = api_version.split("/")
             if len(api_version_parts) != 2:
-                raise ValueError("Error parsing ApiVersion [" + api_version
-                                 + "]." + "Expected form \"group/version\""
-                                 )
+                raise ValueError(
+                    (
+                        f"Error parsing ApiVersion [{api_version}]."
+                        + "Expected form \"group/version\""
+                    )
+                )
 
             group = api_version_parts[0]
             version = api_version_parts[1]
@@ -440,7 +447,9 @@ def raw_remove_custom_resource(admin_mc, request):
                 body = json.loads(e.body)
                 if body["code"] not in WAIT_HTTP_ERROR_CODES:
                     raise e
+
         request.addfinalizer(clean)
+
     return _cleanup
 
 
@@ -509,15 +518,11 @@ def wait_for_condition(condition_type, status, client, obj, timeout=45):
     while not find_condition(condition_type, status, obj):
         time.sleep(sleep)
         sleep *= 2
-        if sleep > 2:
-            sleep = 2
+        sleep = min(sleep, 2)
         obj = client.reload(obj)
         delta = time.time() - start
         if delta > timeout:
-            msg = 'Expected condition {} to have status {}\n'\
-                'Timeout waiting for [{}:{}] for condition after {} ' \
-                'seconds\n {}'.format(condition_type, status, obj.type, obj.id,
-                                      delta, str(obj))
+            msg = f'Expected condition {condition_type} to have status {status}\nTimeout waiting for [{obj.type}:{obj.id}] for condition after {delta} seconds\n {str(obj)}'
             raise Exception(msg)
     return obj
 
@@ -538,10 +543,10 @@ def find_condition(condition_type, status, obj):
     if obj.conditions is None:
         return False
 
-    for condition in obj.conditions:
-        if condition.type == condition_type and condition.status == status:
-            return True
-    return False
+    return any(
+        condition.type == condition_type and condition.status == status
+        for condition in obj.conditions
+    )
 
 
 def kubernetes_api_client(rancher_client, cluster_name):
@@ -550,8 +555,7 @@ def kubernetes_api_client(rancher_client, cluster_name):
     loader = KubeConfigLoader(config_dict=yaml.full_load(kc.config))
     client_configuration = type.__call__(Configuration)
     loader.load_and_set(client_configuration)
-    k8s_client = ApiClient(configuration=client_configuration)
-    return k8s_client
+    return ApiClient(configuration=client_configuration)
 
 
 def protect_response(r):
@@ -576,11 +580,9 @@ def create_kubeconfig(request, dind_cc, client):
     cluster_kubeconfig = generateKubeconfig()
 
     # write cluster scoped kubeconfig
-    cluster_kubeconfig_file = "kubeconfig-" + random_str() + ".yml"
-    f = open(cluster_kubeconfig_file, "w")
-    f.write(cluster_kubeconfig)
-    f.close()
-
+    cluster_kubeconfig_file = f"kubeconfig-{random_str()}.yml"
+    with open(cluster_kubeconfig_file, "w") as f:
+        f.write(cluster_kubeconfig)
     # cleanup file when done
     request.addfinalizer(lambda: os.remove(cluster_kubeconfig_file))
 

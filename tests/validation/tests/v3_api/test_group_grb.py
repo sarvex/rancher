@@ -259,10 +259,9 @@ def validate_permission_create_ggrb(token, permission=False):
         return None
     else:
         try:
-            rtn = \
-                client.create_global_role_binding(globalRoleId=role["id"],
-                                                  groupPrincipalId=g_id)
-            return rtn
+            return client.create_global_role_binding(
+                globalRoleId=role["id"], groupPrincipalId=g_id
+            )
         except ApiError as e:
             assert False, "user with permission should receive no exception:" \
                           + str(e.error.status) + " " + e.error.code

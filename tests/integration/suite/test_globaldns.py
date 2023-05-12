@@ -21,7 +21,7 @@ def test_dns_fqdn_unique(admin_mc):
                                              'accessKey': access,
                                              'secretKey': secret})
 
-    fqdn = random_str() + ".example.com"
+    fqdn = f"{random_str()}.example.com"
     globaldns_entry = \
         client.create_global_dns(fqdn=fqdn, providerId=provider_name)
 
@@ -46,8 +46,8 @@ def test_dns_provider_deletion(admin_mc):
                                              'accessKey': access,
                                              'secretKey': secret})
 
-    fqdn = random_str() + ".example.com"
-    provider_id = "cattle-global-data:"+provider_name
+    fqdn = f"{random_str()}.example.com"
+    provider_id = f"cattle-global-data:{provider_name}"
     globaldns_entry = \
         client.create_global_dns(fqdn=fqdn, providerId=provider_id)
 
@@ -69,8 +69,12 @@ def test_share_globaldns_provider_entry(admin_mc, user_factory,
     user_member = user_factory()
     remove_resource(user_member)
     user_client = user_member.client
-    members = [{"userPrincipalId": "local://" + user_member.user.id,
-                "accessType": "owner"}]
+    members = [
+        {
+            "userPrincipalId": f"local://{user_member.user.id}",
+            "accessType": "owner",
+        }
+    ]
     globaldns_provider = \
         client.create_global_dns_provider(
             name=provider_name,
@@ -81,30 +85,30 @@ def test_share_globaldns_provider_entry(admin_mc, user_factory,
             members=members)
 
     remove_resource(globaldns_provider)
-    fqdn = random_str() + ".example.com"
+    fqdn = f"{random_str()}.example.com"
     globaldns_entry = \
         client.create_global_dns(fqdn=fqdn, providerId=provider_name,
                                  members=members)
     remove_resource(globaldns_entry)
     # Make sure creator can access both, provider and entry
-    gdns_provider_id = "cattle-global-data:" + provider_name
+    gdns_provider_id = f"cattle-global-data:{provider_name}"
     gdns_provider = client.by_id_global_dns_provider(gdns_provider_id)
     assert gdns_provider is not None
 
-    gdns_entry_id = "cattle-global-data:" + globaldns_entry.name
+    gdns_entry_id = f"cattle-global-data:{globaldns_entry.name}"
     gdns = client.by_id_global_dns(gdns_entry_id)
     assert gdns is not None
     # user should be able to list this gdns provider
     api_instance = kubernetes.client.RbacAuthorizationV1Api(
         admin_mc.k8s_client)
-    provider_rb_name = provider_name + "-gp-a"
+    provider_rb_name = f"{provider_name}-gp-a"
     wait_to_ensure_user_in_rb_subject(api_instance, provider_rb_name,
                                       user_member.user.id)
     gdns_provider = user_client.by_id_global_dns_provider(gdns_provider_id)
     assert gdns_provider is not None
 
     # user should be able to list this gdns entry
-    entry_rb_name = globaldns_entry.name + "-g-a"
+    entry_rb_name = f"{globaldns_entry.name}-g-a"
     wait_to_ensure_user_in_rb_subject(api_instance, entry_rb_name,
                                       user_member.user.id)
     gdns = user_client.by_id_global_dns(gdns_entry_id)
@@ -127,7 +131,7 @@ def test_user_access_global_dns(admin_mc, user_factory, remove_resource):
                 'secretKey': secret})
 
     remove_resource(globaldns_provider)
-    fqdn = random_str() + ".example.com"
+    fqdn = f"{random_str()}.example.com"
     globaldns_entry = \
         user_client.create_global_dns(fqdn=fqdn, providerId=provider_name)
 
@@ -135,18 +139,18 @@ def test_user_access_global_dns(admin_mc, user_factory, remove_resource):
     # Make sure creator can access both, provider and entry
     api_instance = kubernetes.client.RbacAuthorizationV1Api(
         admin_mc.k8s_client)
-    provider_rb_name = provider_name + "-gp-a"
+    provider_rb_name = f"{provider_name}-gp-a"
     wait_to_ensure_user_in_rb_subject(api_instance, provider_rb_name,
                                       user1.user.id)
 
-    gdns_provider_id = "cattle-global-data:" + provider_name
+    gdns_provider_id = f"cattle-global-data:{provider_name}"
     gdns_provider = user_client.by_id_global_dns_provider(gdns_provider_id)
     assert gdns_provider is not None
 
-    entry_rb_name = globaldns_entry.name + "-g-a"
+    entry_rb_name = f"{globaldns_entry.name}-g-a"
     wait_to_ensure_user_in_rb_subject(api_instance, entry_rb_name,
                                       user1.user.id)
-    gdns_entry_id = "cattle-global-data:" + globaldns_entry.name
+    gdns_entry_id = f"cattle-global-data:{globaldns_entry.name}"
     gdns = user_client.by_id_global_dns(gdns_entry_id)
     assert gdns is not None
 
@@ -165,7 +169,7 @@ def test_update_gdns_entry(admin_mc, remove_resource):
                 'secretKey': secret})
 
     remove_resource(globaldns_provider)
-    fqdn = random_str() + ".example.com"
+    fqdn = f"{random_str()}.example.com"
     gdns_entry_name = random_str()
     globaldns_entry = \
         client.create_global_dns(name=gdns_entry_name,
@@ -218,7 +222,7 @@ def wait_for_gdns_update(admin_mc, gdns_entry_name, new_fqdn, timeout=60):
     updated = False
     interval = 0.5
     start = time.time()
-    id = "cattle-global-data:" + gdns_entry_name
+    id = f"cattle-global-data:{gdns_entry_name}"
     while not updated:
         if time.time() - start > timeout:
             raise Exception('Timeout waiting for gdns entry to update')
@@ -258,7 +262,7 @@ def test_cloudflare_provider_proxy_setting(admin_mc, remove_resource):
                                              'apiEmail': apiEmail,
                                              'apiKey': apiKey})
 
-    gdns_provider_id = "cattle-global-data:" + provider_name
+    gdns_provider_id = f"cattle-global-data:{provider_name}"
     gdns_provider = client.by_id_global_dns_provider(gdns_provider_id)
     assert gdns_provider is not None
     assert gdns_provider.cloudflareProviderConfig.proxySetting is True
@@ -280,7 +284,7 @@ def test_dns_fqdn_hostname(admin_mc, remove_resource):
                                              'secretKey': secret})
     remove_resource(globaldns_provider)
 
-    fqdn = random_str() + ".example!!!*.com"
+    fqdn = f"{random_str()}.example!!!*.com"
     with pytest.raises(ApiError) as e:
         client.create_global_dns(fqdn=fqdn, providerId=provider_name)
         assert e.value.error.status == 422

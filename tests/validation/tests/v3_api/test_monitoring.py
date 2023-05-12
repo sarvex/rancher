@@ -87,13 +87,10 @@ name_mapping = {
     "workload": workload_graph_list,
     "node": node_graph_list,
 }
-STORAGE_CLASS = "longhorn"
 ENABLE_STORAGE = os.environ.get('RANCHER_ENABLE_STORAGE_FOR_MONITORING',
                                 "false")
 ENABLE_STORAGE = ENABLE_STORAGE.lower()
-if ENABLE_STORAGE == "false":
-    STORAGE_CLASS = "default"
-
+STORAGE_CLASS = "default" if ENABLE_STORAGE == "false" else "longhorn"
 # Longhorn is provided as the persistence storage class
 C_MONITORING_ANSWERS = {"operator-init.enabled": "true",
                         "exporter-node.enabled": "true",
@@ -504,7 +501,7 @@ def setup_monitoring(request):
         id=MONITORING_TEMPLATE_ID).data[0]
     if MONITORING_VERSION == "":
         MONITORING_VERSION = monitoring_template.defaultVersion
-    print("MONITORING_VERSION=" + MONITORING_VERSION)
+    print(f"MONITORING_VERSION={MONITORING_VERSION}")
     # Enable cluster monitoring
     if cluster["enableClusterMonitoring"] is False:
         rancher_client.action(cluster, "enableMonitoring",
@@ -560,11 +557,11 @@ def check_data(source, target_list):
     res.sort()
     target_copy.sort()
     extra.sort()
-    if len(target_copy) != 0 or len(extra) != 0:
-        print("target graphs : {}".format(target_list))
-        print("actual graphs : {}".format(res))
-        print("missing graphs: {}".format(target_copy))
-        print("extra graphs  : {}".format(extra))
+    if len(target_copy) != 0 or extra:
+        print(f"target graphs : {target_list}")
+        print(f"actual graphs : {res}")
+        print(f"missing graphs: {target_copy}")
+        print(f"extra graphs  : {extra}")
         return False
     return True
 
@@ -585,7 +582,7 @@ def validate_cluster_graph(action_query, resource_type, timeout=10):
         k8s_version = cluster.appliedSpec["rancherKubernetesEngineConfig"][
             "kubernetesVersion"]
         # the following two graphs are available only in k8s 1.15 and 1.16
-        if not k8s_version[0:5] in ["v1.15", "v1.16"]:
+        if k8s_version[:5] not in ["v1.15", "v1.16"]:
             target_graph_list.remove("apiserver-request-latency")
             target_graph_list.remove(
                 "scheduler-e-2-e-scheduling-latency-seconds-quantile")
@@ -605,18 +602,19 @@ def wait_for_target_up(token, cluster, project, job):
 
     project_client = get_project_client_for_token(project, token)
     app = project_client.list_app(name=PROJECT_MONITORING_APP).data[0]
-    url = CATTLE_TEST_URL + '/k8s/clusters/' + cluster.id \
-        + '/api/v1/namespaces/' + app.targetNamespace \
-        + '/services/http:access-prometheus:80/proxy/api/v1/targets'
-    headers1 = {'Authorization': 'Bearer ' + token}
+    url = f'{CATTLE_TEST_URL}/k8s/clusters/{cluster.id}/api/v1/namespaces/{app.targetNamespace}/services/http:access-prometheus:80/proxy/api/v1/targets'
+    headers1 = {'Authorization': f'Bearer {token}'}
     start = time.time()
     while True:
         t = requests.get(headers=headers1, url=url, verify=False).json()
         if "data" in t.keys():
             for item in t["data"]["activeTargets"]:
-                if "job" in item["labels"].keys():
-                    if item["labels"]["job"] == job and item["health"] == "up":
-                        return
+                if (
+                    "job" in item["labels"].keys()
+                    and item["labels"]["job"] == job
+                    and item["health"] == "up"
+                ):
+                    return
         if time.time() - start > DEFAULT_MONITORING_TIMEOUT:
             raise AssertionError(
                 "Timed out waiting for target to be up")
@@ -719,11 +717,8 @@ def validate_project_prometheus(project, token):
                                               workloadMetrics=metrics)
     wait_for_wl_to_active(project_client, workload)
     app = project_client.list_app(name=PROJECT_MONITORING_APP).data[0]
-    url = CATTLE_TEST_URL + '/k8s/clusters/' + cluster.id \
-        + '/api/v1/namespaces/' + app.targetNamespace \
-        + '/services/http:access-prometheus:80/proxy/api/v1/' \
-        + 'query?query=web_app_online_user_count'
-    headers1 = {'Authorization': 'Bearer ' + USER_TOKEN}
+    url = f'{CATTLE_TEST_URL}/k8s/clusters/{cluster.id}/api/v1/namespaces/{app.targetNamespace}/services/http:access-prometheus:80/proxy/api/v1/query?query=web_app_online_user_count'
+    headers1 = {'Authorization': f'Bearer {USER_TOKEN}'}
     start = time.time()
     while True:
         result = requests.get(headers=headers1, url=url, verify=False).json()

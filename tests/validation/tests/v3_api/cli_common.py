@@ -19,7 +19,7 @@ class BaseCli:
 
     @classmethod
     def run_command(cls, command, expect_error=False):
-        command = "rancherctl {}".format(command)
+        command = f"rancherctl {command}"
         cls.log.debug("run cmd:\t%s", command)
         if expect_error:
             result = run_command_with_stderr(command, log_out=False)
@@ -35,13 +35,11 @@ class BaseCli:
         context = kwargs.get("context", self.DEFAULT_CONTEXT)
         if context is None:
             raise ValueError("No context supplied for rancher login!")
-        cmd = "login {} --token {} --context {} --skip-verify".format(
-            url, token, context)
+        cmd = f"login {url} --token {token} --context {context} --skip-verify"
         self.run_command(cmd, expect_error=True)
 
     def switch_context(self, project_id):
-        self.run_command("context switch {}".format(project_id),
-                         expect_error=True)
+        self.run_command(f"context switch {project_id}", expect_error=True)
 
     def get_context(self):
         result = self.run_command("context current")
@@ -76,8 +74,9 @@ class BaseCli:
 
     def inspect(self, resource_type, resource_id, **kwargs):
         resource_format = kwargs.get("format", "{{.id}}")
-        result = self.run_command("inspect --type {} --format '{}' {}".format(
-            resource_type, resource_format, resource_id))
+        result = self.run_command(
+            f"inspect --type {resource_type} --format '{resource_format}' {resource_id}"
+        )
         return result.strip()
 
     def ps(self):
@@ -85,7 +84,7 @@ class BaseCli:
             "ps --format '{{.NameSpace}}|{{.Name}}|{{.Image}}|{{.Scale}}'")
 
     def kubectl(self, cmd):
-        return self.run_command("kubectl {}".format(cmd))
+        return self.run_command(f"kubectl {cmd}")
 
     def wait_for_ready(self, command, val_to_check, **kwargs):
         timeout = kwargs.get("timeout", DEFAULT_TIMEOUT)

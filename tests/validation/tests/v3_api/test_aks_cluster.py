@@ -44,11 +44,13 @@ def get_aks_version(multiple_versions=False):
             "clientId": CLIENT_ID,
             "clientSecret": SECRET_KEY
         }
-        headers = {"Content-Type": "application/json",
-                   "Accept": "application/json",
-                   "Authorization": "Bearer " + USER_TOKEN}
+        headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "Authorization": f"Bearer {USER_TOKEN}",
+        }
 
-        aks_version_url = CATTLE_TEST_URL + "/meta/aksVersions"
+        aks_version_url = f"{CATTLE_TEST_URL}/meta/aksVersions"
         print(aks_version_url)
         response = requests.post(aks_version_url, json=data_test,
                                  verify=False, headers=headers)
@@ -71,7 +73,7 @@ def get_aks_version(multiple_versions=False):
 
 
 def get_aks_config(version):
-    aks_config = {
+    return {
         "azureKubernetesServiceConfig": {
             "adminUsername": "azureuser",
             "agentPoolName": "rancher",
@@ -97,6 +99,5 @@ def get_aks_config(version):
             "enableNetworkPolicy": False,
         },
         "name": random_test_name("test-auto-aks"),
-        "type": "cluster"
+        "type": "cluster",
     }
-    return aks_config

@@ -9,8 +9,6 @@ from .conftest import wait_for
 def test_generic_initial_defaults(admin_mc):
     cclient = admin_mc.client
     schema_defaults = {}
-    setting_defaults = {}
-
     data = cclient.schema.types['cluster'].resourceFields
     default = data["enableNetworkPolicy"]["default"]
 
@@ -29,10 +27,12 @@ def test_generic_initial_defaults(admin_mc):
     setting = cclient.list_setting(name="cluster-defaults")
     data = json.loads(setting['data'][0]['default'])
 
-    setting_defaults["enableNetworkPolicy"] = data["enableNetworkPolicy"]
-    setting_defaults["ignoreDockerVersion"] = \
-        data["rancherKubernetesEngineConfig"]["ignoreDockerVersion"]
-
+    setting_defaults = {
+        "enableNetworkPolicy": data["enableNetworkPolicy"],
+        "ignoreDockerVersion": data["rancherKubernetesEngineConfig"][
+            "ignoreDockerVersion"
+        ],
+    }
     assert schema_defaults == setting_defaults
 
 
@@ -77,7 +77,7 @@ def test_eks_cluster_immutable_subnets(admin_mc, remove_resource):
                      "subnets": [
                          "subnet-045bfaeca7d3f1cb3"
                      ]})
-        if e.value.error.status == 404 or e.value.error.status == 500:
+        if e.value.error.status in [404, 500]:
             return False
         print(e)
         assert e.value.error.status == 422

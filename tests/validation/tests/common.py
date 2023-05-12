@@ -14,7 +14,7 @@ def random_int(start, end):
 
 
 def random_test_name(name="test"):
-    return name + "-" + str(random_int(10000, 99999))
+    return f"{name}-{str(random_int(10000, 99999))}"
 
 
 def random_str():

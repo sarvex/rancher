@@ -63,7 +63,7 @@ def test_upgrade_2(test_name, cloud_provider, rke_client, kubectl):
     """
     rke_template = 'cluster_upgrade_2_1.yml.j2'
     all_nodes = cloud_provider.create_multiple_nodes(4, test_name)
-    before_upgrade_nodes = all_nodes[0:-1]
+    before_upgrade_nodes = all_nodes[:-1]
     rke_config = create_rke_cluster(
         rke_client, kubectl, before_upgrade_nodes, rke_template,
         k8_rancher_image=K8S_PREUPGRADE_IMAGE)
@@ -111,7 +111,7 @@ def test_upgrade_3(test_name, cloud_provider, rke_client, kubectl):
 
     # New cluster needs to keep controlplane and etcd nodes the same
     rke_template = 'cluster_upgrade_3_2.yml.j2'
-    after_upgrade_nodes = all_nodes[0:-1]
+    after_upgrade_nodes = all_nodes[:-1]
     rke_config = create_rke_cluster(
         rke_client, kubectl, after_upgrade_nodes, rke_template,
         k8_rancher_image=K8S_UPGRADE_IMAGE)

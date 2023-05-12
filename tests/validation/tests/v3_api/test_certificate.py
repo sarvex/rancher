@@ -41,7 +41,7 @@ route_entry_53_2 = random_test_name('auto-ssc') + '.qa.rancher.space'
 
 def get_ssh_key(ssh_key_name):
     home = str(Path.home())
-    path = '{}/.ssh/{}'.format(home, ssh_key_name)
+    path = f'{home}/.ssh/{ssh_key_name}'
     if os.path.exists(path):
         with open(path, 'r') as f:
             ssh_key = f.read()
@@ -192,8 +192,7 @@ class TestCertificate:
                "hosts": [host]
                }
         self.ingress = self.p_client.create_ingress(
-            name="{}-2".format(ingress_name), namespaceId=ns_2.id,
-            rules=[rule], tls=[tls]
+            name=f"{ingress_name}-2", namespaceId=ns_2.id, rules=[rule], tls=[tls]
         )
         wait_for_ingress_to_active(self.p_client, self.ingress)
         validate_ingress_using_endpoint(
@@ -281,8 +280,8 @@ class TestCertificate:
                 }
         tls = {"certificateId": self.certificate_all_ns_ssc.id, "hosts": [host]}
         self.ingress = self.p_client.create_ingress(
-            name="{}-2".format(ingress_name), namespaceId=ns_2.id, rules=[rule],
-            tls=[tls])
+            name=f"{ingress_name}-2", namespaceId=ns_2.id, rules=[rule], tls=[tls]
+        )
         wait_for_ingress_to_active(self.p_client, self.ingress)
         validate_ingress_using_endpoint(
             self.p_client, self.ingress, [self.workload_2], certcheck=True,
@@ -451,12 +450,10 @@ class TestCertificate:
         )
         if role in (CLUSTER_MEMBER, PROJECT_READ_ONLY):
             cert_count = p_client.list_namespaced_certificate(name=cert_name)
-            assert len(cert_count) == 0, '{} is able to list the ' \
-                                         'certificate'.format(role)
+            assert len(cert_count) == 0, f'{role} is able to list the certificate'
         else:
             cert_count = p_client.list_namespaced_certificate(name=cert_name)
-            assert len(cert_count) > 0, "{} couldn't to list the " \
-                                        "certificate".format(role)
+            assert len(cert_count) > 0, f"{role} couldn't to list the certificate"
 
             # Delete the resources
             p_client.delete(certificate_valid)
@@ -484,12 +481,10 @@ class TestCertificate:
         )
         if role in (CLUSTER_MEMBER, PROJECT_READ_ONLY):
             cert_count = p_client.list_certificate(name=cert_name)
-            assert len(cert_count) == 0, '{} is able to list the ' \
-                                         'certificate'.format(role)
+            assert len(cert_count) == 0, f'{role} is able to list the certificate'
         else:
             cert_count = p_client.list_certificate(name=cert_name)
-            assert len(cert_count) > 0, "{} couldn't to list the " \
-                                        "certificate".format(role)
+            assert len(cert_count) > 0, f"{role} couldn't to list the certificate"
 
             # Delete the resources
             p_client.delete(certificate_allns_valid)
@@ -598,8 +593,7 @@ class TestCertificate:
             p_client.delete(certificate_allns_valid)
             time.sleep(2)
             cert_count = p_client.list_certificate(name=cert_name)
-            assert len(cert_count) == 0, '{} is not able to delete the ' \
-                                         'certificate'.format(role)
+            assert len(cert_count) == 0, f'{role} is not able to delete the certificate'
 
     @if_test_rbac
     @pytest.mark.parametrize("role", rbac_role_list)
@@ -632,8 +626,7 @@ class TestCertificate:
             p_client.delete(certificate_valid)
             time.sleep(2)
             cert_count = p_client.list_namespaced_certificate(name=cert_name)
-            assert len(cert_count) == 0, '{} is not able to delete the ' \
-                                         'certificate'.format(role)
+            assert len(cert_count) == 0, f'{role} is not able to delete the certificate'
 
     @if_test_rbac
     @pytest.mark.parametrize("role", [PROJECT_OWNER, PROJECT_MEMBER])
@@ -651,10 +644,9 @@ class TestCertificate:
         cert_count_by_role = p_client.list_certificate(name='cert-all-ns-valid')
         cert_count_default = default_p_client.list_certificate(
             name='cert-all-ns-valid')
-        assert len(cert_count_default) > 0, "{} couldn't to list the " \
-                                            "certificate".format(role)
+        assert len(cert_count_default) > 0, f"{role} couldn't to list the certificate"
         assert len(cert_count_by_role) == 0, "{} could list certificate in " \
-                                             "'Test Certificate' project."
+                                                 "'Test Certificate' project."
 
     @if_test_rbac
     @pytest.mark.parametrize("role", [PROJECT_OWNER, PROJECT_MEMBER])
@@ -673,10 +665,9 @@ class TestCertificate:
             name='cert-valid')
         cert_count_default = default_p_client.list_namespaced_certificate(
             name='cert-valid')
-        assert len(cert_count_default) > 0, "{} couldn't to list the " \
-                                            "certificate".format(role)
+        assert len(cert_count_default) > 0, f"{role} couldn't to list the certificate"
         assert len(cert_count_by_role) == 0, "{} could list certificate in " \
-                                             "'Test Certificate' project."
+                                                 "'Test Certificate' project."
 
     @if_test_rbac
     @pytest.mark.parametrize("role", [PROJECT_OWNER, PROJECT_MEMBER])

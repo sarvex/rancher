@@ -27,9 +27,10 @@ DEFAULT_MULTI_CLUSTER_APP_TIMEOUT = 300
 DEFAULT_APP_DELETION_TIMEOUT = 360
 DEFAULT_APP_V2_TIMEOUT = 60
 
-CATTLE_API_URL = CATTLE_TEST_URL + "/v3"
-CATTLE_AUTH_URL = \
-    CATTLE_TEST_URL + "/v3-public/localproviders/local?action=login"
+CATTLE_API_URL = f"{CATTLE_TEST_URL}/v3"
+CATTLE_AUTH_URL = (
+    f"{CATTLE_TEST_URL}/v3-public/localproviders/local?action=login"
+)
 
 USER_PASSWORD = os.environ.get('USER_PASSWORD', "None")
 ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', "None")
@@ -176,11 +177,8 @@ NESTED_GROUP_ENABLED = ast.literal_eval(
 AUTH_USER_PASSWORD = os.environ.get('RANCHER_AUTH_USER_PASSWORD', "")
 
 # the link to log in as an auth user
-LOGIN_AS_AUTH_USER_URL = \
-    CATTLE_TEST_URL + "/v3-public/" \
-    + AUTH_PROVIDER + "Providers/" \
-    + AUTH_PROVIDER.lower() + "?action=login"
-CATTLE_AUTH_PRINCIPAL_URL = CATTLE_TEST_URL + "/v3/principals?action=search"
+LOGIN_AS_AUTH_USER_URL = f"{CATTLE_TEST_URL}/v3-public/{AUTH_PROVIDER}Providers/{AUTH_PROVIDER.lower()}?action=login"
+CATTLE_AUTH_PRINCIPAL_URL = f"{CATTLE_TEST_URL}/v3/principals?action=search"
 
 # This is used for nested group when a third part Auth is enabled
 nested_group = {
@@ -199,7 +197,7 @@ if_test_group_rbac = pytest.mark.skipif(
 
 # -----------------------------------------------------------------------------
 # global variables from test_create_ha.py
-test_run_id = "test" + str(random.randint(10000, 99999))
+test_run_id = f"test{random.randint(10000, 99999)}"
 RANCHER_HOSTNAME_PREFIX = os.environ.get("RANCHER_HOSTNAME_PREFIX",
                                          test_run_id)
 CERT_MANAGER_VERSION = os.environ.get("RANCHER_CERT_MANAGER_VERSION", "v1.0.1")
@@ -216,7 +214,7 @@ def is_windows(os_type=TEST_OS):
 
 
 def get_cluster_client_for_token_v1(cluster_id, token):
-    url = CATTLE_TEST_URL + "/k8s/clusters/" + cluster_id + "/v1/schemas"
+    url = f"{CATTLE_TEST_URL}/k8s/clusters/{cluster_id}/v1/schemas"
     return rancher.Client(url=url, token=token, verify=False)
 
 
@@ -234,20 +232,17 @@ def get_client_for_token(token, url=CATTLE_API_URL):
 
 def get_project_client_for_token(project, token):
     p_url = project.links['self'] + '/schemas'
-    p_client = rancher.Client(url=p_url, token=token, verify=False)
-    return p_client
+    return rancher.Client(url=p_url, token=token, verify=False)
 
 
 def get_cluster_client_for_token(cluster, token):
     c_url = cluster.links['self'] + '/schemas'
-    c_client = rancher.Client(url=c_url, token=token, verify=False)
-    return c_client
+    return rancher.Client(url=c_url, token=token, verify=False)
 
 
 def up(cluster, token):
     c_url = cluster.links['self'] + '/schemas'
-    c_client = rancher.Client(url=c_url, token=token, verify=False)
-    return c_client
+    return rancher.Client(url=c_url, token=token, verify=False)
 
 
 def wait_state(client, obj, state, timeout=DEFAULT_TIMEOUT):
@@ -261,9 +256,7 @@ def wait_for_condition(client, resource, check_function, fail_handler=None,
     resource = client.reload(resource)
     while not check_function(resource):
         if time.time() - start > timeout:
-            exceptionMsg = 'Timeout waiting for ' + resource.baseType + \
-                           ' to satisfy condition: ' + \
-                           inspect.getsource(check_function)
+            exceptionMsg = f'Timeout waiting for {resource.baseType} to satisfy condition: {inspect.getsource(check_function)}'
             if fail_handler:
                 exceptionMsg = exceptionMsg + fail_handler(resource)
             raise Exception(exceptionMsg)
@@ -273,8 +266,8 @@ def wait_for_condition(client, resource, check_function, fail_handler=None,
 
 
 def get_setting_value_by_name(name):
-    settings_url = CATTLE_API_URL + "/settings/" + name
-    head = {'Authorization': 'Bearer ' + ADMIN_TOKEN}
+    settings_url = f"{CATTLE_API_URL}/settings/{name}"
+    head = {'Authorization': f'Bearer {ADMIN_TOKEN}'}
     response = requests.get(settings_url, verify=False, headers=head)
     return response.json()["value"]
 
@@ -337,21 +330,21 @@ def create_ns(client, cluster, project, ns_name=None):
 
 
 def assign_members_to_cluster(client, user, cluster, role_template_id):
-    crtb = client.create_cluster_role_template_binding(
+    return client.create_cluster_role_template_binding(
         clusterId=cluster.id,
         roleTemplateId=role_template_id,
         subjectKind="User",
-        userId=user.id)
-    return crtb
+        userId=user.id,
+    )
 
 
 def assign_members_to_project(client, user, project, role_template_id):
-    prtb = client.create_project_role_template_binding(
+    return client.create_project_role_template_binding(
         projectId=project.id,
         roleTemplateId=role_template_id,
         subjectKind="User",
-        userId=user.id)
-    return prtb
+        userId=user.id,
+    )
 
 
 def change_member_role_in_cluster(client, user, crtb, role_template_id):
@@ -373,9 +366,8 @@ def change_member_role_in_project(client, user, prtb, role_template_id):
 def create_kubeconfig(cluster, file_name=kube_fname):
     generateKubeConfigOutput = cluster.generateKubeconfig()
     print(generateKubeConfigOutput.config)
-    file = open(file_name, "w")
-    file.write(generateKubeConfigOutput.config)
-    file.close()
+    with open(file_name, "w") as file:
+        file.write(generateKubeConfigOutput.config)
 
 
 def validate_psp_error_worklaod(p_client, workload, error_message):
@@ -402,17 +394,16 @@ def validate_all_workload_image_from_rancher(project_client, ns, pod_count=1,
     workload_list = deployment_list + daemonset_list + cronjob_list + job_list
 
     wls = [dep.name for dep in project_client.list_workload(namespaceId=ns.id).data]
-    assert len(workload_list) == len(wls), \
-        "Expected {} workload(s) to be present in {} namespace " \
-        "but there were {}".format(len(workload_list), ns.name, len(wls))
+    assert len(workload_list) == len(
+        wls
+    ), f"Expected {len(workload_list)} workload(s) to be present in {ns.name} namespace but there were {len(wls)}"
 
     for workload_name in workload_list:
         workloads = project_client.list_workload(name=workload_name,
                                                  namespaceId=ns.id).data
-        assert len(workloads) == workload_list.count(workload_name), \
-            "Expected {} workload(s) to be present with name {} " \
-            "but there were {}".format(workload_list.count(workload_name),
-                                       workload_name, len(workloads))
+        assert len(workloads) == workload_list.count(
+            workload_name
+        ), f"Expected {workload_list.count(workload_name)} workload(s) to be present with name {workload_name} but there were {len(workloads)}"
         for workload in workloads:
             for container in workload.containers:
                 assert str(container.image).startswith("rancher/")
@@ -466,15 +457,14 @@ def validate_workload(p_client, workload, type, ns_name, pod_count=1,
         assert p["status"]["phase"] == expected_status
 
 
-    wl_result = execute_kubectl_cmd(
-        "get " + type + " " + workload.name + " -n " + ns_name)
-    if type == "deployment" or type == "statefulSet":
+    wl_result = execute_kubectl_cmd(f"get {type} {workload.name} -n {ns_name}")
+    if type in ["deployment", "statefulSet"]:
         assert wl_result["status"]["readyReplicas"] == len(pods)
-    if type == "daemonSet":
-        assert wl_result["status"]["currentNumberScheduled"] == len(pods)
     if type == "cronJob":
         assert len(wl_result["status"]["active"]) >= len(pods)
-    if type == "job":
+    elif type == "daemonSet":
+        assert wl_result["status"]["currentNumberScheduled"] == len(pods)
+    elif type == "job":
         assert wl_result["status"]["succeeded"] == len(pods)
 
 
@@ -486,12 +476,11 @@ def validate_workload_with_sidekicks(p_client, workload, type, ns_name,
     assert len(pods) == pod_count
     for pod in pods:
         wait_for_pod_to_running(p_client, pod)
-    wl_result = execute_kubectl_cmd(
-        "get " + type + " " + workload.name + " -n " + ns_name)
+    wl_result = execute_kubectl_cmd(f"get {type} {workload.name} -n {ns_name}")
     assert wl_result["status"]["readyReplicas"] == pod_count
     for key, value in workload.workloadLabels.items():
-        label = key + "=" + value
-    get_pods = "get pods -l" + label + " -n " + ns_name
+        label = f"{key}={value}"
+    get_pods = f"get pods -l{label} -n {ns_name}"
     execute_kubectl_cmd(get_pods)
     pods_result = execute_kubectl_cmd(get_pods)
     assert len(pods_result["items"]) == pod_count
@@ -509,8 +498,8 @@ def validate_workload_paused(p_client, workload, expectedstatus):
 
 def validate_pod_images(expectedimage, workload, ns_name):
     for key, value in workload.workloadLabels.items():
-        label = key + "=" + value
-    get_pods = "get pods -l" + label + " -n " + ns_name
+        label = f"{key}={value}"
+    get_pods = f"get pods -l{label} -n {ns_name}"
     pods = execute_kubectl_cmd(get_pods)
 
     for pod in pods["items"]:
@@ -519,14 +508,11 @@ def validate_pod_images(expectedimage, workload, ns_name):
 
 def validate_pods_are_running_by_id(expectedpods, workload, ns_name):
     for key, value in workload.workloadLabels.items():
-        label = key + "=" + value
-    get_pods = "get pods -l" + label + " -n " + ns_name
+        label = f"{key}={value}"
+    get_pods = f"get pods -l{label} -n {ns_name}"
     pods = execute_kubectl_cmd(get_pods)
 
-    curpodnames = []
-    for pod in pods["items"]:
-        curpodnames.append(pod["metadata"]["name"])
-
+    curpodnames = [pod["metadata"]["name"] for pod in pods["items"]]
     for expectedpod in expectedpods["items"]:
         assert expectedpod["metadata"]["name"] in curpodnames
 
@@ -640,10 +626,7 @@ def wait_for_pod_to_running(client, pod, timeout=DEFAULT_TIMEOUT, job_type=False
     pods = client.list_pod(uuid=pod.uuid).data
     assert len(pods) == 1
     p = pods[0]
-    if job_type:
-        expected_state = "succeeded"
-    else:
-        expected_state = "running"
+    expected_state = "succeeded" if job_type else "running"
     while p.state != expected_state :
         if time.time() - start > timeout:
             raise AssertionError(
@@ -664,10 +647,12 @@ def get_schedulable_nodes(cluster, client=None, os_type=TEST_OS):
         if node.worker and (not node.unschedulable):
             for key, val in node.labels.items():
                 # Either one of the labels should be present on the node
-                if key == 'kubernetes.io/os' or key == 'beta.kubernetes.io/os':
-                    if val == os_type:
-                        schedulable_nodes.append(node)
-                        break
+                if (
+                    key in ['kubernetes.io/os', 'beta.kubernetes.io/os']
+                    and val == os_type
+                ):
+                    schedulable_nodes.append(node)
+                    break
         # Including master in list of nodes as master is also schedulable
         if ('k3s' in cluster.version["gitVersion"] or 'rke2' in cluster.version["gitVersion"]) and node.controlPlane:
             schedulable_nodes.append(node)
@@ -678,11 +663,7 @@ def get_etcd_nodes(cluster, client=None):
     if not client:
         client = get_user_client()
     nodes = client.list_node(clusterId=cluster.id).data
-    etcd_nodes = []
-    for node in nodes:
-        if node.etcd:
-            etcd_nodes.append(node)
-    return etcd_nodes
+    return [node for node in nodes if node.etcd]
 
 
 def get_role_nodes(cluster, role, client=None):
@@ -700,11 +681,11 @@ def get_role_nodes(cluster, role, client=None):
             control_nodes.append(node)
         if node.worker:
             worker_nodes.append(node)
-    if role == "etcd":
-        node_list = etcd_nodes
     if role == "control":
         node_list = control_nodes
-    if role == "worker":
+    elif role == "etcd":
+        node_list = etcd_nodes
+    elif role == "worker":
         node_list = worker_nodes
     return node_list
 
@@ -712,21 +693,19 @@ def get_role_nodes(cluster, role, client=None):
 def validate_ingress(p_client, cluster, workloads, host, path,
                      insecure_redirect=False):
     time.sleep(10)
-    curl_args = " "
-    if (insecure_redirect):
-        curl_args = " -L --insecure "
+    curl_args = " -L --insecure " if insecure_redirect else " "
     if len(host) > 0:
-        curl_args += " --header 'Host: " + host + "'"
+        curl_args += f" --header 'Host: {host}'"
     nodes = get_schedulable_nodes(cluster, os_type="linux")
     target_name_list = get_target_names(p_client, workloads)
     for node in nodes:
         host_ip = resolve_node_ip(node)
-        url = "http://" + host_ip + path
+        url = f"http://{host_ip}{path}"
         if not insecure_redirect:
             wait_until_ok(url, timeout=300, headers={
                 "Host": host
             })
-        cmd = curl_args + " " + url
+        cmd = f"{curl_args} {url}"
         validate_http_response(cmd, target_name_list)
 
 
@@ -764,10 +743,8 @@ def get_target_names(p_client, workloads):
     for workload in workloads:
         pod_list = p_client.list_pod(workloadId=workload.id).data
         pods.extend(pod_list)
-    target_name_list = []
-    for pod in pods:
-        target_name_list.append(pod.name)
-    print("target name list:" + str(target_name_list))
+    target_name_list = [pod.name for pod in pods]
+    print(f"target name list:{target_name_list}")
     return target_name_list
 
 
@@ -787,7 +764,7 @@ def get_endpoint_url_for_workload(p_client, workload, timeout=600):
             assert len(workload.publicEndpoints) > 0
             url = "http://"
             url = url + workload.publicEndpoints[0]["addresses"][0] + ":"
-            url = url + str(workload.publicEndpoints[0]["port"])
+            url += str(workload.publicEndpoints[0]["port"])
             fqdn_available = True
     return url
 
@@ -807,7 +784,7 @@ def check_for_no_access(url, verify=False):
         requests.get(url, verify=verify)
         return False
     except requests.ConnectionError:
-        print("Connection Error - " + url)
+        print(f"Connection Error - {url}")
         return True
 
 
@@ -852,11 +829,9 @@ def wait_for_status_code(url, expected_code=200, timeout=DEFAULT_TIMEOUT):
 def check_if_ok(url, verify=False, headers={}):
     try:
         res = requests.head(url, verify=verify, headers=headers)
-        if res.status_code == 200:
-            return True
-        return False
+        return res.status_code == 200
     except requests.ConnectionError:
-        print("Connection Error - " + url)
+        print(f"Connection Error - {url}")
         return False
 
 
@@ -866,21 +841,22 @@ def validate_http_response(cmd, target_name_list, client_pod=None,
         wait_until_active(cmd, 60)
     target_hit_list = target_name_list[:]
     count = 5 * len(target_name_list)
-    for i in range(1, count):
+    for _ in range(1, count):
         if len(target_hit_list) == 0:
             break
         if client_pod is None:
-            curl_cmd = "curl " + cmd
+            curl_cmd = f"curl {cmd}"
             if insecure:
                 curl_cmd += "\t--insecure"
             result = run_command(curl_cmd)
         else:
-            if is_windows():
-                wget_cmd = 'powershell -NoLogo -NonInteractive -Command ' \
-                           '"& {{ (Invoke-WebRequest -UseBasicParsing -Uri ' \
-                           '{0}).Content }}"'.format(cmd)
-            else:
-                wget_cmd = "wget -qO- " + cmd
+            wget_cmd = (
+                'powershell -NoLogo -NonInteractive -Command '
+                '"& {{ (Invoke-WebRequest -UseBasicParsing -Uri '
+                '{0}).Content }}"'.format(cmd)
+                if is_windows()
+                else f"wget -qO- {cmd}"
+            )
             result = kubectl_pod_exec(client_pod, wget_cmd)
             result = result.decode()
         if result is not None:
@@ -938,7 +914,7 @@ def validate_cluster(client, cluster, intermediate_state="provisioning",
         scale = len(pods)
         # test service discovery
         validate_service_discovery(workload, scale, p_client, ns, pods)
-        host = "test" + str(random_int(10000, 99999)) + ".com"
+        host = f"test{str(random_int(10000, 99999))}.com"
         path = "/name.html"
         rule = {"host": host,
                 "paths":
@@ -956,31 +932,30 @@ def check_cluster_version(cluster, version):
     cluster_k8s_version = \
         cluster.appliedSpec["rancherKubernetesEngineConfig"][
             "kubernetesVersion"]
-    assert cluster_k8s_version == version, \
-        "cluster_k8s_version: " + cluster_k8s_version + \
-        " Expected: " + version
+    assert (
+        cluster_k8s_version == version
+    ), f"cluster_k8s_version: {cluster_k8s_version} Expected: {version}"
     expected_k8s_version = version[:version.find("-rancher")]
     k8s_version = execute_kubectl_cmd("version")
     kubectl_k8s_version = k8s_version["serverVersion"]["gitVersion"]
-    assert kubectl_k8s_version == expected_k8s_version, \
-        "kubectl version: " + kubectl_k8s_version + \
-        " Expected: " + expected_k8s_version
+    assert (
+        kubectl_k8s_version == expected_k8s_version
+    ), f"kubectl version: {kubectl_k8s_version} Expected: {expected_k8s_version}"
 
 
 def check_cluster_state(etcd_count):
     css_resp = execute_kubectl_cmd("get cs")
     css = css_resp["items"]
     components = ["scheduler", "controller-manager"]
-    for i in range(0, etcd_count):
-        components.append("etcd-" + str(i))
-    print("components to check - " + str(components))
+    components.extend(f"etcd-{str(i)}" for i in range(0, etcd_count))
+    print(f"components to check - {components}")
     for cs in css:
         component_name = cs["metadata"]["name"]
         assert component_name in components
         components.remove(component_name)
         assert cs["conditions"][0]["status"] == "True"
         assert cs["conditions"][0]["type"] == "Healthy"
-    assert len(components) == 0
+    assert not components
 
 
 def validate_dns_record(pod, record, expected, port=TEST_IMAGE_PORT):
@@ -997,18 +972,15 @@ def validate_dns_entry(pod, host, expected, port=TEST_IMAGE_PORT):
 
     # requires pod with `dig` available - TEST_IMAGE
     if HARDENED_CLUSTER:
-        cmd = 'curl -vs {}:{} 2>&1'.format(host, port)
+        cmd = f'curl -vs {host}:{port} 2>&1'
     else:
         cmd = 'ping -c 1 -W 1 {0}'.format(host)
     cmd_output = kubectl_pod_exec(pod, cmd)
 
-    connectivity_validation_pass = False
-    for expected_value in expected:
-        if expected_value in str(cmd_output):
-            connectivity_validation_pass = True
-            break
-
-    assert connectivity_validation_pass is True
+    connectivity_validation_pass = any(
+        expected_value in str(cmd_output) for expected_value in expected
+    )
+    assert connectivity_validation_pass
     if HARDENED_CLUSTER:
         assert " 200 OK" in str(cmd_output)
     else:
@@ -1064,8 +1036,8 @@ def validate_dns_record_deleted(client, dns_record, timeout=DEFAULT_TIMEOUT):
     while len(records) != 0:
         if time.time() - start > timeout:
             raise AssertionError(
-                "Timed out waiting for record {} to be deleted"
-                "".format(dns_record.name))
+                f"Timed out waiting for record {dns_record.name} to be deleted"
+            )
         time.sleep(.5)
         records = client.list_dns_record(name=dns_record.name, ).data
 
@@ -1081,7 +1053,7 @@ def wait_for_nodes_to_become_active(client, cluster, exception_list=[],
                 print("Need to re-evalauate new node list")
                 node_auto_deleted = True
                 retry_count += 1
-                print("Retry Count:" + str(retry_count))
+                print(f"Retry Count:{retry_count}")
     if node_auto_deleted and retry_count < 5:
         wait_for_nodes_to_become_active(client, cluster, exception_list,
                                         retry_count)
@@ -1097,7 +1069,7 @@ def wait_for_node_status(client, node, state):
     if node_count == 1:
         node_status = nodes[0].state
     else:
-        print("Node does not exist anymore -" + uuid)
+        print(f"Node does not exist anymore -{uuid}")
         return None
     while node_status != state:
         if time.time() - start > MACHINE_TIMEOUT:
@@ -1109,7 +1081,7 @@ def wait_for_node_status(client, node, state):
         if node_count == 1:
             node_status = nodes[0].state
         else:
-            print("Node does not exist anymore -" + uuid)
+            print(f"Node does not exist anymore -{uuid}")
             return None
     return node
 
@@ -1143,7 +1115,6 @@ def wait_for_cluster_node_count(client, cluster, expected_node_count,
 
 
 def get_custom_host_registration_cmd(client, cluster, roles, node):
-    allowed_roles = ["etcd", "worker", "controlplane"]
     cluster_tokens = client.list_cluster_registration_token(
         clusterId=cluster.id).data
     if len(cluster_tokens) > 0:
@@ -1151,17 +1122,17 @@ def get_custom_host_registration_cmd(client, cluster, roles, node):
     else:
         cluster_token = create_custom_host_registration_token(client, cluster)
 
-    additional_options = " --address " + node.public_ip_address + \
-                         " --internal-address " + node.private_ip_address
+    additional_options = f" --address {node.public_ip_address} --internal-address {node.private_ip_address}"
 
-    if 'Administrator' == node.ssh_user:
+    if node.ssh_user == 'Administrator':
         cmd = cluster_token.windowsNodeCommand
-        cmd = cmd.replace('| iex', '--worker' + additional_options + ' | iex ')
+        cmd = cmd.replace('| iex', f'--worker{additional_options} | iex ')
     else:
         cmd = cluster_token.nodeCommand
+        allowed_roles = ["etcd", "worker", "controlplane"]
         for role in roles:
             assert role in allowed_roles
-            cmd += " --" + role
+            cmd += f" --{role}"
 
         cmd += additional_options
     return cmd
@@ -1179,7 +1150,7 @@ def create_custom_host_registration_token(client, cluster):
 
 def get_cluster_by_name(client, name):
     clusters = client.list_cluster(name=name).data
-    assert len(clusters) == 1, "Cluster " + name + " does not exist"
+    assert len(clusters) == 1, f"Cluster {name} does not exist"
     return clusters[0]
 
 
@@ -1192,13 +1163,16 @@ def get_cluster_type(client, cluster):
     ]
     if "rancherKubernetesEngineConfig" in cluster:
         nodes = client.list_node(clusterId=cluster.id).data
-        if len(nodes) > 0:
-            if nodes[0].nodeTemplateId is None:
-                return "Custom"
-    for cluster_config in cluster_configs:
-        if cluster_config in cluster:
-            return cluster_config
-    return "Imported"
+        if len(nodes) > 0 and nodes[0].nodeTemplateId is None:
+            return "Custom"
+    return next(
+        (
+            cluster_config
+            for cluster_config in cluster_configs
+            if cluster_config in cluster
+        ),
+        "Imported",
+    )
 
 
 def delete_cluster(client, cluster):
@@ -1208,19 +1182,22 @@ def delete_cluster(client, cluster):
         cluster_type = get_cluster_type(client, cluster)
         print(cluster_type)
         if get_cluster_type(client, cluster) in ["Imported", "Custom"]:
-            filters = [
-                {'Name': 'tag:Name',
-                 'Values': ['testcustom*', 'teststress*', 'testsa*']}]
-            ip_filter = {}
             ip_list = []
-            ip_filter['Name'] = \
-                'network-interface.addresses.association.public-ip'
-            ip_filter['Values'] = ip_list
-            filters.append(ip_filter)
+            ip_filter = {
+                'Name': 'network-interface.addresses.association.public-ip',
+                'Values': ip_list,
+            }
+            filters = [
+                {
+                    'Name': 'tag:Name',
+                    'Values': ['testcustom*', 'teststress*', 'testsa*'],
+                },
+                ip_filter,
+            ]
             for node in nodes:
                 host_ip = resolve_node_ip(node)
                 ip_list.append(host_ip)
-            assert len(ip_filter) > 0
+            assert ip_filter
             print(ip_filter)
             aws_nodes = AmazonWebServices().get_nodes(filters)
             if aws_nodes is None:
@@ -1258,9 +1235,9 @@ def check_connectivity_between_pods(pod1, pod2, allow_connectivity=True):
     if is_windows():
         cmd = 'ping -w 1 -n 1 {0}'.format(pod_ip)
     elif HARDENED_CLUSTER:
-        cmd = 'curl -I {}:{}'.format(pod_ip, TEST_IMAGE_PORT)
+        cmd = f'curl -I {pod_ip}:{TEST_IMAGE_PORT}'
     else:
-        cmd = "ping -c 1 -W 1 " + pod_ip
+        cmd = f"ping -c 1 -W 1 {pod_ip}"
 
     response = kubectl_pod_exec(pod1, cmd)
     if not HARDENED_CLUSTER:
@@ -1272,17 +1249,16 @@ def check_connectivity_between_pods(pod1, pod2, allow_connectivity=True):
             assert " 200 OK" in str(response)
         else:
             assert " 0% packet loss" in str(response)
+    elif is_windows():
+        assert " (100% loss)" in str(response)
+    elif HARDENED_CLUSTER:
+        assert " 200 OK" not in str(response)
     else:
-        if is_windows():
-            assert " (100% loss)" in str(response)
-        elif HARDENED_CLUSTER:
-            assert " 200 OK" not in str(response)
-        else:
-            assert " 100% packet loss" in str(response)
+        assert " 100% packet loss" in str(response)
 
 
 def kubectl_pod_exec(pod, cmd):
-    command = "exec " + pod.name + " -n " + pod.namespaceId + " -- " + cmd
+    command = f"exec {pod.name} -n {pod.namespaceId} -- {cmd}"
     return execute_kubectl_cmd(command, json_out=False, stderr=True)
 
 
@@ -1295,8 +1271,7 @@ def exec_shell_command(ip, port, cmd, password, user="root", sshKey=None):
         ssh.connect(ip, username=user, password=password, port=port)
 
     stdin, stdout, stderr = ssh.exec_command(cmd)
-    response = stdout.readlines()
-    return response
+    return stdout.readlines()
 
 
 def wait_for_ns_to_become_active(client, ns, timeout=DEFAULT_TIMEOUT):
@@ -1321,8 +1296,8 @@ def wait_for_pod_images(p_client, workload, ns_name, expectedimage, numofpods,
     start = time.time()
 
     for key, value in workload.workloadLabels.items():
-        label = key + "=" + value
-    get_pods = "get pods -l" + label + " -n " + ns_name
+        label = f"{key}={value}"
+    get_pods = f"get pods -l{label} -n {ns_name}"
     pods = execute_kubectl_cmd(get_pods)
 
     for x in range(0, numofpods - 1):
@@ -1345,8 +1320,8 @@ def wait_for_pods_in_workload(p_client, workload, pod_count,
     while len(pods) != pod_count:
         if time.time() - start > timeout:
             raise AssertionError(
-                "Timed out waiting for pods in workload {}. Expected {}. "
-                "Got {}".format(workload.name, pod_count, len(pods)))
+                f"Timed out waiting for pods in workload {workload.name}. Expected {pod_count}. Got {len(pods)}"
+            )
         time.sleep(.5)
         pods = p_client.list_pod(workloadId=workload.id).data
     return pods
@@ -1383,16 +1358,20 @@ def validate_cluster_state(client, cluster,
     start_time = time.time()
     if check_intermediate_state:
         cluster = wait_for_condition(
-            client, cluster,
+            client,
+            cluster,
             lambda x: x.state == intermediate_state,
-            lambda x: 'State is: ' + x.state,
-            timeout=timeout)
+            lambda x: f'State is: {x.state}',
+            timeout=timeout,
+        )
         assert cluster.state == intermediate_state
     cluster = wait_for_condition(
-        client, cluster,
+        client,
+        cluster,
         lambda x: x.state == "active",
-        lambda x: 'State is: ' + x.state,
-        timeout=timeout)
+        lambda x: f'State is: {x.state}',
+        timeout=timeout,
+    )
     assert cluster.state == "active"
     wait_for_nodes_to_become_active(client, cluster,
                                     exception_list=nodes_not_in_active_state)
@@ -1407,8 +1386,9 @@ def validate_cluster_state(client, cluster,
             raise Exception(msg)
     end_time = time.time()
     diff = time.strftime("%H:%M:%S", time.gmtime(end_time - start_time))
-    print("The total time for provisioning/updating the cluster {} : {}".
-          format(cluster.name, diff))
+    print(
+        f"The total time for provisioning/updating the cluster {cluster.name} : {diff}"
+    )
     return cluster
 
 
@@ -1418,8 +1398,7 @@ def wait_until_available(client, obj, timeout=DEFAULT_TIMEOUT):
     while True:
         time.sleep(sleep)
         sleep *= 2
-        if sleep > 2:
-            sleep = 2
+        sleep = min(sleep, 2)
         try:
             obj = client.reload(obj)
         except ApiError as e:
@@ -1429,8 +1408,7 @@ def wait_until_available(client, obj, timeout=DEFAULT_TIMEOUT):
             return obj
         delta = time.time() - start
         if delta > timeout:
-            msg = 'Timeout waiting for [{}:{}] for condition after {}' \
-                  ' seconds'.format(obj.type, obj.id, delta)
+            msg = f'Timeout waiting for [{obj.type}:{obj.id}] for condition after {delta} seconds'
             raise Exception(msg)
 
 
@@ -1445,17 +1423,16 @@ def cluster_cleanup(client, cluster, aws_nodes=None):
         if aws_nodes is not None:
             delete_node(aws_nodes)
     else:
-        env_details = "env.CATTLE_TEST_URL='" + CATTLE_TEST_URL + "'\n"
-        env_details += "env.ADMIN_TOKEN='" + ADMIN_TOKEN + "'\n"
-        env_details += "env.USER_TOKEN='" + USER_TOKEN + "'\n"
-        env_details += "env.CLUSTER_NAME='" + cluster.name + "'\n"
+        env_details = f"env.CATTLE_TEST_URL='{CATTLE_TEST_URL}" + "'\n"
+        env_details += f"env.ADMIN_TOKEN='{ADMIN_TOKEN}" + "'\n"
+        env_details += f"env.USER_TOKEN='{USER_TOKEN}" + "'\n"
+        env_details += f"env.CLUSTER_NAME='{cluster.name}" + "'\n"
         create_config_file(env_details)
 
 
 def create_config_file(env_details):
-    file = open(env_file, "w")
-    file.write(env_details)
-    file.close()
+    with open(env_file, "w") as file:
+        file.write(env_details)
 
 
 def validate_hostPort(p_client, workload, source_port, cluster):
@@ -1468,14 +1445,13 @@ def validate_hostPort(p_client, workload, source_port, cluster):
     for node in nodes:
         target_name_list = []
         for pod in pods:
-            print(pod.nodeId + " check " + node.id)
+            print(f"{pod.nodeId} check {node.id}")
             if pod.nodeId == node.id:
                 target_name_list.append(pod.name)
                 break
-        if len(target_name_list) > 0:
+        if target_name_list:
             host_ip = resolve_node_ip(node)
-            curl_cmd = " http://" + host_ip + ":" + \
-                       str(source_port) + "/name.html"
+            curl_cmd = f" http://{host_ip}:{str(source_port)}/name.html"
             validate_http_response(curl_cmd, target_name_list)
 
 
@@ -1486,7 +1462,7 @@ def validate_lb(p_client, workload, source_port):
     assert source_port == source_port_wk, "Source ports do not match"
     target_name_list = get_target_names(p_client, [workload])
     wait_until_lb_is_active(url)
-    validate_http_response(url + "/name.html", target_name_list)
+    validate_http_response(f"{url}/name.html", target_name_list)
 
 
 def validate_nodePort(p_client, workload, cluster, source_port):
@@ -1496,24 +1472,18 @@ def validate_nodePort(p_client, workload, cluster, source_port):
     assert source_port == source_port_wk, "Source ports do not match"
     nodes = get_schedulable_nodes(cluster)
     pods = p_client.list_pod(workloadId=wl.id).data
-    target_name_list = []
-    for pod in pods:
-        target_name_list.append(pod.name)
-    print("target name list:" + str(target_name_list))
+    target_name_list = [pod.name for pod in pods]
+    print(f"target name list:{target_name_list}")
     for node in nodes:
         host_ip = resolve_node_ip(node)
-        curl_cmd = " http://" + host_ip + ":" + \
-                   str(source_port_wk) + "/name.html"
+        curl_cmd = f" http://{host_ip}:{str(source_port_wk)}/name.html"
         validate_http_response(curl_cmd, target_name_list)
 
 
 def validate_clusterIp(p_client, workload, cluster_ip, test_pods, source_port):
     pods = p_client.list_pod(workloadId=workload.id).data
-    target_name_list = []
-    for pod in pods:
-        target_name_list.append(pod["name"])
-    curl_cmd = "http://" + cluster_ip + ":" + \
-               str(source_port) + "/name.html"
+    target_name_list = [pod["name"] for pod in pods]
+    curl_cmd = f"http://{cluster_ip}:{str(source_port)}/name.html"
     for pod in test_pods:
         validate_http_response(curl_cmd, target_name_list, pod)
 
@@ -1571,18 +1541,19 @@ def create_wl_with_nfs(p_client, ns_id, pvc_name, wl_name,
             "image": TEST_IMAGE,
             "volumeMounts": volumeMounts
             }]
-    if is_daemonSet:
-        workload = p_client.create_workload(name=wl_name,
-                                            containers=con,
-                                            namespaceId=ns_id,
-                                            volumes=volumes,
-                                            daemonSetConfig={})
-    else:
-        workload = p_client.create_workload(name=wl_name,
-                                            containers=con,
-                                            namespaceId=ns_id,
-                                            volumes=volumes)
-    return workload
+    return (
+        p_client.create_workload(
+            name=wl_name,
+            containers=con,
+            namespaceId=ns_id,
+            volumes=volumes,
+            daemonSetConfig={},
+        )
+        if is_daemonSet
+        else p_client.create_workload(
+            name=wl_name, containers=con, namespaceId=ns_id, volumes=volumes
+        )
+    )
 
 
 def write_content_to_file(pod, content, filename):
@@ -1673,7 +1644,7 @@ def wait_for_app_to_remove(client, app_id,
     if len(app_data) == 0:
         return
     application = app_data[0]
-    while application.state == "removing" or application.state == "active":
+    while application.state in ["removing", "active"]:
         if time.time() - start > timeout / 10:
             raise AssertionError(
                 "Timed out waiting for app to not be installed")
@@ -1712,18 +1683,18 @@ def validate_response_app_endpoint(p_client, appId,
 
 
 def resolve_node_ip(node):
-    if hasattr(node, 'externalIpAddress'):
-        node_ip = node.externalIpAddress
-    else:
-        node_ip = node.ipAddress
-    return node_ip
+    return (
+        node.externalIpAddress
+        if hasattr(node, 'externalIpAddress')
+        else node.ipAddress
+    )
 
 
 def provision_nfs_server():
     node = AmazonWebServices().create_node(random_test_name("nfs-server"))
     node.wait_for_ssh_ready()
     c_path = os.getcwd()
-    cmd_path = c_path + "/tests/v3_api/scripts/nfs-setup.sh"
+    cmd_path = f"{c_path}/tests/v3_api/scripts/nfs-setup.sh"
     command = open(cmd_path, 'r').read()
     node.execute_command(command)
     return node
@@ -1737,18 +1708,17 @@ def get_defaut_question_answers(client, externalId):
             answer = ""
             # If required and no default value is available, set fake value
             # only for type string . For other types error out
-            if "required" in quest.keys():
-                if quest["required"]:
-                    if quest["type"] == "enum" and "options" in quest.keys():
-                        answer = quest["options"][0]
-                    elif quest["type"] == "password":
-                        answer = "R@ncher135"
-                    elif quest["type"] == "string":
-                        answer = "fake"
-                    else:
-                        assert False, \
-                            "Cannot set default for types {}" \
-                            "".format(quest["type"])
+            if "required" in quest.keys() and quest["required"]:
+                if quest["type"] == "enum" and "options" in quest.keys():
+                    answer = quest["options"][0]
+                elif quest["type"] == "password":
+                    answer = "R@ncher135"
+                elif quest["type"] == "string":
+                    answer = "fake"
+                else:
+                    assert False, \
+                        "Cannot set default for types {}" \
+                        "".format(quest["type"])
         return answer
 
     def check_if_question_needed(questions_and_answers, ques):
@@ -1782,13 +1752,15 @@ def get_defaut_question_answers(client, externalId):
             question = ques["variable"]
             answer = get_answer(ques)
             questions_and_answers[question] = get_answer(ques)
-            if "showSubquestionIf" in ques.keys():
-                if ques["showSubquestionIf"] == answer:
-                    sub_questions = ques["subquestions"]
-                    for sub_question in sub_questions:
-                        question = sub_question["variable"]
-                        questions_and_answers[question] = \
-                            get_answer(sub_question)
+            if (
+                "showSubquestionIf" in ques.keys()
+                and ques["showSubquestionIf"] == answer
+            ):
+                sub_questions = ques["subquestions"]
+                for sub_question in sub_questions:
+                    question = sub_question["variable"]
+                    questions_and_answers[question] = \
+                        get_answer(sub_question)
     print("questions_and_answers = {}".format(questions_and_answers))
     return questions_and_answers
 
@@ -1836,7 +1808,7 @@ def validate_catalog_app(proj_client, app, external_id, answer=None):
         "Incorrect list of parameters from catalog external ID"
     chart_prefix = parameters[len(parameters) - 2].split("=")[1]
     chart_suffix = parameters[len(parameters) - 1].split("=")[1]
-    chart = chart_prefix + "-" + chart_suffix
+    chart = f"{chart_prefix}-{chart_suffix}"
     app_name = parameters[len(parameters) - 2].split("=")[1]
     workloads = proj_client.list_workload(namespaceId=ns).data
 
@@ -1849,10 +1821,10 @@ def validate_catalog_app(proj_client, app, external_id, answer=None):
             wait_for_wl_to_active(proj_client, wl)
     else:
         for wl in workloads:
-            print("Workload {} , state - {}".format(wl.id, wl.state))
+            print(f"Workload {wl.id} , state - {wl.state}")
             assert wl.state == "active"
             chart_deployed = get_chart_info(wl.workloadLabels)
-            print("Chart detail of app - {}".format(chart_deployed))
+            print(f"Chart detail of app - {chart_deployed}")
             # '-' check is to make sure chart has both app name and version.
             if app_name in chart_deployed and '-' in chart_deployed:
                 assert chart_deployed == chart, "the chart version is wrong"
@@ -1992,8 +1964,8 @@ def rbac_prepare():
         user_client = get_client_for_token(rbac_data["users"][key]["token"])
         _, user_cluster = get_user_client_and_cluster(user_client)
         rbac_data["users"][key]["kubeconfig"] = os.path.join(
-            os.path.dirname(os.path.realpath(__file__)),
-            key + "_kubeconfig")
+            os.path.dirname(os.path.realpath(__file__)), f"{key}_kubeconfig"
+        )
         create_kubeconfig(user_cluster, rbac_data["users"][key]["kubeconfig"])
 
     # create another project that none of the above users are assigned to
@@ -2047,12 +2019,9 @@ def check_condition(condition_type, status):
 def create_catalog_external_id(catalog_name, template, version,
                                project_cluster_id=None, catalog_type=None):
     if catalog_type is None:
-        return "catalog://?catalog=" + catalog_name + \
-               "&template=" + template + "&version=" + version
-    elif catalog_type == "project" or catalog_type == "cluster":
-        return "catalog://?catalog=" + project_cluster_id + "/" \
-               + catalog_name + "&type=" + catalog_type \
-               + "Catalog&template=" + template + "&version=" + version
+        return f"catalog://?catalog={catalog_name}&template={template}&version={version}"
+    elif catalog_type in ["project", "cluster"]:
+        return f"catalog://?catalog={project_cluster_id}/{catalog_name}&type={catalog_type}Catalog&template={template}&version={version}"
 
 
 def wait_for_catalog_active(client, catalog, timeout=DEFAULT_CATALOG_TIMEOUT):
@@ -2075,7 +2044,7 @@ def wait_for_catalog_active(client, catalog, timeout=DEFAULT_CATALOG_TIMEOUT):
 
 def readDataFile(data_dir, name):
     fname = os.path.join(data_dir, name)
-    print("File: " + fname)
+    print(f"File: {fname}")
     is_file = os.path.isfile(fname)
     assert is_file
     with open(fname) as f:
@@ -2084,8 +2053,7 @@ def readDataFile(data_dir, name):
 
 def set_url_password_token(rancher_url, server_url=None):
     """Returns a ManagementContext for the default global admin user."""
-    auth_url = \
-        rancher_url + "/v3-public/localproviders/local?action=login"
+    auth_url = f"{rancher_url}/v3-public/localproviders/local?action=login"
     r = requests.post(auth_url, json={
         'username': 'admin',
         'password': 'admin',
@@ -2095,8 +2063,7 @@ def set_url_password_token(rancher_url, server_url=None):
     token = r.json()['token']
     print(token)
     # Change admin password
-    client = rancher.Client(url=rancher_url + "/v3",
-                            token=token, verify=False)
+    client = rancher.Client(url=f"{rancher_url}/v3", token=token, verify=False)
     admin_user = client.list_user(username="admin").data
     admin_user[0].setpassword(newPassword=ADMIN_PASSWORD)
 
@@ -2151,10 +2118,7 @@ def generate_template_global_role(name, new_user_default=False, template=None):
     if template is None:
         template = TEMPLATE_MANAGE_CATALOG
     template = deepcopy(template)
-    if new_user_default:
-        template["newUserDefault"] = "true"
-    else:
-        template["newUserDefault"] = "false"
+    template["newUserDefault"] = "true" if new_user_default else "false"
     if name is None:
         name = random_name()
     template["name"] = name
@@ -2211,7 +2175,7 @@ def validate_backup_create(namespace, backup_info, backup_mode=None):
                                                        daemonSetConfig={})
     validate_workload(p_client, backup_info["workload"], "daemonSet", ns.name,
                       len(get_schedulable_nodes(cluster)))
-    host = "test" + str(random_int(10000, 99999)) + ".com"
+    host = f"test{str(random_int(10000, 99999))}.com"
     namespace["host"] = host
     path = "/name.html"
     rule = {"host": host,

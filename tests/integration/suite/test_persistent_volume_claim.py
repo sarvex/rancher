@@ -16,32 +16,27 @@ def test_cannot_create_azure_no_accountstoragetype(admin_pc, admin_cc,
     storage_client = kubernetes.client.StorageV1Api(api_client=k8s_client)
 
     ns = admin_pc.cluster.client.create_namespace(
-        name="ns" + random_str(),
-        projectId=admin_pc.project.id)
+        name=f"ns{random_str()}", projectId=admin_pc.project.id
+    )
     remove_resource(ns)
 
     sc = storage_client.create_storage_class(
         body={
-            "metadata": {
-                "name": "sc" + random_str()
-            },
-            "parameters": {
-                "kind": "shared"
-            },
-            "provisioner": "kubernetes.io/azure-disk"})
+            "metadata": {"name": f"sc{random_str()}"},
+            "parameters": {"kind": "shared"},
+            "provisioner": "kubernetes.io/azure-disk",
+        }
+    )
     remove_resource(sc)
 
     with pytest.raises(ApiError) as e:
         client.create_persistent_volume_claim(
-            name="pc" + random_str(),
+            name=f"pc{random_str()}",
             storageClassId=sc.metadata.name,
             namespaceId=ns.id,
             accessModes=["ReadWriteOnce"],
-            resources={
-              "requests": {
-                "storage": "30Gi"
-              }
-            })
+            resources={"requests": {"storage": "30Gi"}},
+        )
     assert e.value.error.status == 422
     assert "must provide storageaccounttype or skuName" in \
         e.value.error.message
@@ -56,13 +51,13 @@ def test_can_create_azure_any_accountstoragetype(admin_pc, admin_cc,
     pc_client = admin_pc.client
 
     ns = cc_client.create_namespace(
-        name="ns" + random_str(),
-        projectId=admin_pc.project.id)
+        name=f"ns{random_str()}", projectId=admin_pc.project.id
+    )
     remove_resource(ns)
 
     # try with storageaccounttype value
     sc1 = cc_client.create_storage_class(
-        name="sc" + random_str(),
+        name=f"sc{random_str()}",
         provisioner="kubernetes.io/azure-disk",
         kind="shared",
         parameters={
@@ -72,20 +67,17 @@ def test_can_create_azure_any_accountstoragetype(admin_pc, admin_cc,
     remove_resource(sc1)
 
     pvc1 = pc_client.create_persistent_volume_claim(
-        name="pc" + random_str(),
+        name=f"pc{random_str()}",
         storageClassId=sc1.name,
         namespaceId=ns.id,
         accessModes=["ReadWriteOnce"],
-        resources={
-          "requests": {
-            "storage": "30Gi"
-          }
-        })
+        resources={"requests": {"storage": "30Gi"}},
+    )
     remove_resource(pvc1)
 
     # try with skuName value
     sc2 = cc_client.create_storage_class(
-        name="sc" + random_str(),
+        name=f"sc{random_str()}",
         provisioner="kubernetes.io/azure-disk",
         parameters={
             "skuName": "asdf",
@@ -94,15 +86,12 @@ def test_can_create_azure_any_accountstoragetype(admin_pc, admin_cc,
     remove_resource(sc2)
 
     pvc2 = pc_client.create_persistent_volume_claim(
-        name="pc" + random_str(),
+        name=f"pc{random_str()}",
         storageClassId=sc2.name,
         namespaceId=ns.id,
         accessModes=["ReadWriteOnce"],
-        resources={
-            "requests": {
-                "storage": "30Gi"
-            }
-        })
+        resources={"requests": {"storage": "30Gi"}},
+    )
     remove_resource(pvc2)
 
 
@@ -111,19 +100,16 @@ def test_can_create_pvc_no_storage_no_vol(admin_pc, remove_resource):
        can be created
     """
     ns = admin_pc.cluster.client.create_namespace(
-        name="ns" + random_str(),
-        projectId=admin_pc.project.id)
+        name=f"ns{random_str()}", projectId=admin_pc.project.id
+    )
     remove_resource(ns)
 
     pvc = admin_pc.client.create_persistent_volume_claim(
-        name="pc" + random_str(),
+        name=f"pc{random_str()}",
         namespaceId=ns.id,
         accessModes=["ReadWriteOnce"],
-        resources={
-            "requests": {
-                "storage": "30Gi"
-            }
-        })
+        resources={"requests": {"storage": "30Gi"}},
+    )
     remove_resource(pvc)
     assert pvc is not None
     assert pvc.state == "pending"

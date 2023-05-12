@@ -179,8 +179,7 @@ def test_node_annotation_kubectl_add():
     node_name = node.nodeName
 
     # add annotation on node
-    command = "annotate nodes " + node_name + " " + \
-              annotation_key + "=" + annotation_value
+    command = f"annotate nodes {node_name} {annotation_key}={annotation_value}"
     print(command)
     execute_kubectl_cmd(command, False)
     time.sleep(2)
@@ -207,8 +206,7 @@ def test_node_annotation_kubectl_edit():
     node_name = node.nodeName
 
     # add annotation on node
-    command = "annotate nodes " + node_name + " " + \
-              annotation_key + "=" + annotation_value
+    command = f"annotate nodes {node_name} {annotation_key}={annotation_value}"
     print(command)
     execute_kubectl_cmd(command, False)
     time.sleep(2)
@@ -221,8 +219,9 @@ def test_node_annotation_kubectl_edit():
 
     # edit annotation through kubectl
     new_value = random_name()
-    command = "annotate nodes " + node_name + " " + \
-              annotation_key + "=" + new_value + " --overwrite"
+    command = (
+        f"annotate nodes {node_name} {annotation_key}={new_value} --overwrite"
+    )
     print(command)
     execute_kubectl_cmd(command, False)
     node = client.reload(node)
@@ -249,8 +248,7 @@ def test_node_annotation_kubectl_delete():
     node_name = node.nodeName
 
     # add annotation on node
-    command = "annotate nodes " + node_name + " " + \
-              annotation_key + "=" + annotation_value
+    command = f"annotate nodes {node_name} {annotation_key}={annotation_value}"
     print(command)
     execute_kubectl_cmd(command, False)
     time.sleep(2)
@@ -261,7 +259,7 @@ def test_node_annotation_kubectl_delete():
                                     annotation_value)
 
     # remove annotation through kubectl
-    command = "annotate node " + node_name + " " + annotation_key + "-"
+    command = f"annotate node {node_name} {annotation_key}-"
     execute_kubectl_cmd(command, False)
     time.sleep(2)
 
@@ -278,8 +276,7 @@ def test_node_annotation_k_add_a_delete_k_add():
         get_node_details(cluster_detail["cluster"], cluster_detail["client"])
     node_name = node.nodeName
 
-    command = "annotate nodes " + node_name + " " + \
-              annotation_key + "=" + annotation_value
+    command = f"annotate nodes {node_name} {annotation_key}={annotation_value}"
     print(command)
     execute_kubectl_cmd(command, False)
     time.sleep(2)
@@ -324,8 +321,7 @@ def test_node_annotation_k_add_a_edit_k_edit():
         get_node_details(cluster_detail["cluster"], cluster_detail["client"])
     node_name = node.nodeName
 
-    command = "annotate nodes " + node_name + " " + \
-              annotation_key + "=" + annotation_value
+    command = f"annotate nodes {node_name} {annotation_key}={annotation_value}"
     execute_kubectl_cmd(command, False)
     time.sleep(2)
 
@@ -351,8 +347,7 @@ def test_node_annotation_k_add_a_edit_k_edit():
 
     # edit annotation through kubectl
     new_value_2 = random_name()
-    command = "annotate nodes " + node_name + " " + \
-              annotation_key + "=" + new_value_2 + " --overwrite"
+    command = f"annotate nodes {node_name} {annotation_key}={new_value_2} --overwrite"
     print(command)
     execute_kubectl_cmd(command, False)
     time.sleep(2)
@@ -391,7 +386,7 @@ def test_node_annotations_a_add_k_delete_a_add():
                                     annotation_value)
 
     # delete annotation
-    command = " annotate node " + node_name + " " + annotation_key + "-"
+    command = f" annotate node {node_name} {annotation_key}-"
     execute_kubectl_cmd(command, False)
     time.sleep(2)
 
@@ -440,8 +435,9 @@ def test_node_annotation_a_add_k_edit_a_edit():
 
     # edit annotation through kubectl
     new_value = random_name()
-    command = "annotate nodes " + node_name + " " + \
-              annotation_key + "=" + new_value + " --overwrite"
+    command = (
+        f"annotate nodes {node_name} {annotation_key}={new_value} --overwrite"
+    )
     print(command)
     execute_kubectl_cmd(command, False)
     node = client.reload(node)
@@ -621,8 +617,7 @@ def test_rbac_node_annotation_add_kubectl(role):
     create_kubeconfig(cluster[0])
 
     # add annotation on node
-    command = "annotate nodes " + node_name + " " + \
-              annotation_key + "=" + annotation_value
+    command = f"annotate nodes {node_name} {annotation_key}={annotation_value}"
 
     if role == CLUSTER_OWNER:
         execute_kubectl_cmd(command, False)
@@ -657,8 +652,7 @@ def test_rbac_node_annotation_delete_kubectl(role):
     node_name = node.nodeName
 
     # add annotation on node
-    command = "annotate nodes " + node_name + " " + \
-              annotation_key + "=" + annotation_value
+    command = f"annotate nodes {node_name} {annotation_key}={annotation_value}"
     print(command)
     execute_kubectl_cmd(command, False)
     time.sleep(2)
@@ -676,7 +670,7 @@ def test_rbac_node_annotation_delete_kubectl(role):
     create_kubeconfig(cluster[0])
 
     # remove annotation through kubectl
-    command = "annotate node " + node_name + " " + annotation_key + "-"
+    command = f"annotate node {node_name} {annotation_key}-"
 
     if role == CLUSTER_OWNER:
         execute_kubectl_cmd(command, False)
@@ -711,8 +705,7 @@ def test_rbac_node_annotation_edit_kubectl(role):
     node_name = node.nodeName
 
     # add annotation on node
-    command = "annotate nodes " + node_name + " " + \
-              annotation_key + "=" + annotation_value
+    command = f"annotate nodes {node_name} {annotation_key}={annotation_value}"
     print(command)
     execute_kubectl_cmd(command, False)
     time.sleep(2)
@@ -730,8 +723,7 @@ def test_rbac_node_annotation_edit_kubectl(role):
     create_kubeconfig(cluster[0])
 
     # edit annotation through kubectl
-    command = "annotate nodes " + node_name + " " + \
-              annotation_key + "=" + annotation_value_new + " --overwrite"
+    command = f"annotate nodes {node_name} {annotation_key}={annotation_value_new} --overwrite"
 
     if role == CLUSTER_OWNER:
         execute_kubectl_cmd(command, False)
@@ -781,7 +773,7 @@ def validate_annotation_set_on_node(client, node,
 
     # check via kubectl
     node_name = node.nodeName
-    command = " get nodes " + node_name
+    command = f" get nodes {node_name}"
     node_detail = execute_kubectl_cmd(command)
     print(node_detail["metadata"]["annotations"])
     assert annotation_key in node_detail["metadata"]["annotations"], \
@@ -807,7 +799,7 @@ def validate_annotation_deleted_on_node(client, node, annotation_key):
 
     # check via kubectl
     node_name = node.nodeName
-    command = " get nodes " + node_name
+    command = f" get nodes {node_name}"
     print(command)
     node_detail = execute_kubectl_cmd(command)
     print(node_detail["metadata"]["annotations"])

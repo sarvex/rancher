@@ -63,10 +63,10 @@ def test_context_prtb(admin_mc, admin_pc, remove_resource,
 
     with pytest.raises(ApiError) as e:
         prtb = admin_client.create_project_role_template_binding(
-            name="prtb-" + random_str(),
+            name=f"prtb-{random_str()}",
             userId=user_mc.user.id,
             projectId=project.id,
-            roleTemplateId="cluster-owner"
+            roleTemplateId="cluster-owner",
         )
         remove_resource(prtb)
 
@@ -109,10 +109,10 @@ def test_cloned_role_permissions(admin_mc, remove_resource, user_factory,
     remove_resource(cloned_user)
 
     prtb = admin_mc.client.create_project_role_template_binding(
-        name="prtb-" + random_str(),
+        name=f"prtb-{random_str()}",
         userId=cloned_user.user.id,
         projectId=admin_pc.project.id,
-        roleTemplateId=rt.id
+        roleTemplateId=rt.id,
     )
     remove_resource(prtb)
     wait_until_available(cloned_user.client, admin_pc.project)
@@ -214,10 +214,10 @@ def test_role_template_update_inherited_role(admin_mc, remove_resource,
     # add user to a project with this role
     user_cloned_pm = user_factory()
     prtb = client.create_project_role_template_binding(
-        name="prtb-" + random_str(),
+        name=f"prtb-{random_str()}",
         userId=user_cloned_pm.user.id,
         projectId=admin_pc.project.id,
-        roleTemplateId=role_template_id
+        roleTemplateId=role_template_id,
     )
     remove_resource(prtb)
     wait_until_available(user_cloned_pm.client, admin_pc.project)
@@ -281,10 +281,10 @@ def test_kubernetes_admin_permissions(admin_mc, remove_resource, user_factory,
     remove_resource(cloned_user)
 
     prtb = admin_mc.client.create_project_role_template_binding(
-        name="prtb-" + random_str(),
+        name=f"prtb-{random_str()}",
         userId=cloned_user.user.id,
         projectId=admin_pc.project.id,
-        roleTemplateId=cloned_admin.id
+        roleTemplateId=cloned_admin.id,
     )
     remove_resource(prtb)
     wait_until_available(cloned_user.client, admin_pc.project)
@@ -313,10 +313,10 @@ def test_role_template_changes_revoke_permissions(admin_mc, remove_resource,
     user = user_factory()
     # add a user with this cloned project-owner role to a project
     prtb = admin_mc.client.create_project_role_template_binding(
-        name="prtb-" + random_str(),
+        name=f"prtb-{random_str()}",
         userId=user.user.id,
         projectId=admin_pc.project.id,
-        roleTemplateId=role_template_id
+        roleTemplateId=role_template_id,
     )
     remove_resource(prtb)
     wait_until_available(user.client, admin_pc.project)

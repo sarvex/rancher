@@ -62,9 +62,7 @@ def test_cluster_create_default_role(admin_mc, cleanup_roles, remove_resource):
     for binding in cluster.clusterRoleTemplateBindings():
         def binding_principal_validate():
             bind = client.by_id_cluster_role_template_binding(binding.id)
-            if bind.userPrincipalId is None:
-                return False
-            return bind
+            return False if bind.userPrincipalId is None else bind
 
         binding = wait_for(binding_principal_validate)
         assert binding.roleTemplateId in test_roles
@@ -126,9 +124,7 @@ def test_project_create_default_role(admin_mc, cleanup_roles, remove_resource):
     for binding in project.projectRoleTemplateBindings():
         def binding_principal_validate():
             bind = client.by_id_project_role_template_binding(binding.id)
-            if bind.userPrincipalId is None:
-                return False
-            return bind
+            return False if bind.userPrincipalId is None else bind
 
         binding = wait_for(binding_principal_validate)
 
@@ -153,8 +149,10 @@ def test_project_create_role_locked(admin_mc, cleanup_roles, remove_resource):
     # Lock the role
     client.update(client.by_id_role_template(locked_role), locked=True)
     # Wait for role to get updated
-    wait_for(lambda: client.by_id_role_template(locked_role)['locked'] is True,
-             fail_handler=lambda: "Failed to lock role"+locked_role)
+    wait_for(
+        lambda: client.by_id_role_template(locked_role)['locked'] is True,
+        fail_handler=lambda: f"Failed to lock role{locked_role}",
+    )
 
     project = client.create_project(name=random_str(), clusterId='local')
     remove_resource(project)
@@ -211,14 +209,15 @@ def test_default_system_project_role(admin_mc):
     test_roles = ['project-owner']
     client = admin_mc.client
     projects = client.list_project(clusterId="local")
-    required_projects = {}
-    required_projects["Default"] = defaultProjectLabel
-    required_projects["System"] = systemProjectLabel
+    required_projects = {
+        "Default": defaultProjectLabel,
+        "System": systemProjectLabel,
+    }
     created_projects = []
 
     for project in projects:
         name = project['name']
-        if name == "Default" or name == "System":
+        if name in ["Default", "System"]:
             project = client.reload(project)
 
             projectLabel = required_projects[name]
@@ -235,7 +234,7 @@ def test_default_system_project_role(admin_mc):
 
 def set_role_state(client, roles, context):
     """Set the default templates for globalRole or roleTemplates"""
-    if context == 'cluster' or context == 'project':
+    if context in ['cluster', 'project']:
         existing_roles = client.list_role_template()
 
         for role in existing_roles:

@@ -29,17 +29,16 @@ def create_pspt(client):
     fsgrp = {"ranges": [{"max": 65535, "min": 1, }],
              "rule": "MustRunAs",
              }
-    pspt = \
-        client.create_pod_security_policy_template(name="test" + random_str(),
-                                                   description="Test PSPT",
-                                                   privileged=False,
-                                                   seLinux=selinx,
-                                                   supplementalGroups=supgrp,
-                                                   runAsUser=runas,
-                                                   fsGroup=fsgrp,
-                                                   volumes='*'
-                                                   )
-    return pspt
+    return client.create_pod_security_policy_template(
+        name=f"test{random_str()}",
+        description="Test PSPT",
+        privileged=False,
+        seLinux=selinx,
+        supplementalGroups=supgrp,
+        runAsUser=runas,
+        fsGroup=fsgrp,
+        volumes='*',
+    )
 
 
 def setup_cluster_with_pspt(client, request):
@@ -62,8 +61,9 @@ def setup_cluster_with_pspt(client, request):
 
 def service_account_has_role_binding(rbac, pspt):
     try:
-        rbac.read_namespaced_role_binding("default-asdf-default-" + pspt.id +
-                                          "-clusterrole-binding", "default")
+        rbac.read_namespaced_role_binding(
+            f"default-asdf-default-{pspt.id}-clusterrole-binding", "default"
+        )
         return True
     except ApiException:
         return False
@@ -86,8 +86,9 @@ def test_service_accounts_have_role_binding(admin_mc, request):
         "asdf", "default"))
     request.addfinalizer(
         lambda: rbac.delete_namespaced_role_binding(
-            "default-asdf-default-" + pspt.id + "-clusterrole-binding",
-            "default"))
+            f"default-asdf-default-{pspt.id}-clusterrole-binding", "default"
+        )
+    )
 
     wait_for(lambda: service_account_has_role_binding(rbac, pspt), timeout=30)
 
@@ -151,10 +152,7 @@ def test_pod_security_policy_template_del(admin_mc, admin_pc, remove_resource,
     api_client.delete(pspt_proj)
 
     def pspt_del_check():
-        if api_client.by_id_pod_security_policy_template(pspt_proj.id) is None:
-            return True
-        else:  # keep checking to see delete occurred
-            return False
+        return api_client.by_id_pod_security_policy_template(pspt_proj.id) is None
 
     # will timeout if pspt is not deleted
     wait_for(pspt_del_check)
@@ -167,12 +165,12 @@ def test_incorrect_pspt(admin_mc, remove_resource):
     """ Test that incorrect pod security policy templates cannot be created"""
     api_client = admin_mc.client
 
-    name = "pspt" + random_str()
+    name = f"pspt{random_str()}"
     with pytest.raises(ApiError) as e:
         api_client.create_podSecurityPolicyTemplate(name=name)
     assert e.value.error.status == 422
 
-    name = "pspt" + random_str()
+    name = f"pspt{random_str()}"
     with pytest.raises(ApiError) as e:
         args = {'name': name,
                 'description': 'Test PSPT',

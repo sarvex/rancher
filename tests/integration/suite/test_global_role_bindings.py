@@ -13,9 +13,10 @@ def test_cannot_update_global_role(admin_mc, remove_resource):
     admin_client = admin_mc.client
 
     grb = admin_client.create_global_role_binding(
-        name="gr-" + random_str(),
+        name=f"gr-{random_str()}",
         userId=admin_mc.user.id,
-        globalRoleId="nodedrivers-manage")
+        globalRoleId="nodedrivers-manage",
+    )
     remove_resource(grb)
 
     grb = admin_client.update_by_id_global_role_binding(
@@ -30,9 +31,9 @@ def test_globalrole_must_exist(admin_mc, remove_resource):
 
     with pytest.raises(ApiError) as e:
         grb = admin_client.create_global_role_binding(
-            name="gr-" + random_str(),
+            name=f"gr-{random_str()}",
             globalRoleId="somefakerole",
-            userId=admin_mc.user.id
+            userId=admin_mc.user.id,
         )
         remove_resource(grb)
     assert e.value.error.status == 404
@@ -46,9 +47,10 @@ def test_cannot_update_subject(admin_mc, user_mc, remove_resource):
     admin_client = admin_mc.client
 
     grb = admin_client.create_global_role_binding(
-        name="gr-" + random_str(),
+        name=f"gr-{random_str()}",
         userId=admin_mc.user.id,
-        globalRoleId="nodedrivers-manage")
+        globalRoleId="nodedrivers-manage",
+    )
     remove_resource(grb)
 
     grb = admin_client.update_by_id_global_role_binding(
@@ -75,7 +77,7 @@ def test_grb_crb_lifecycle(admin_mc, remove_resource):
     )
     remove_resource
 
-    cattle_grb = "cattle-globalrolebinding-" + grb.id
+    cattle_grb = f"cattle-globalrolebinding-{grb.id}"
     admin_grb = "globaladmin-u-" + string_to_encoding("asd").lower()
 
     api_instance = RbacAuthorizationV1Api(

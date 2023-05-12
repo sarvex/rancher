@@ -8,8 +8,9 @@ RANCHER_VSPHERE_VCENTER_PORT = \
     os.environ.get("RANCHER_VSPHERE_VCENTER_PORT", 443)
 RANCHER_CLEANUP_CLUSTER = \
     ast.literal_eval(os.environ.get('RANCHER_CLEANUP_CLUSTER', "True"))
-CLUSTER_NAME = os.environ.get("RANCHER_CLUSTER_NAME",
-                              random_name() + "-cluster")
+CLUSTER_NAME = os.environ.get(
+    "RANCHER_CLUSTER_NAME", f"{random_name()}-cluster"
+)
 ENGINE_INSTALL_URL = os.environ.get("RANCHER_ENGINE_INSTALL_URL",
                                     "https://get.docker.com/")
 CLONE_FROM = \
@@ -134,49 +135,57 @@ def create_cluster(request):
     time.sleep(5)
 
     request.addfinalizer(cluster_cleanup)
-    master_pool = client.create_node_pool({
-        "type": "nodetemplate",
-        "clusterId": cluster.id,
-        "controlPlane": True,
-        "etcd": True,
-        "hostnamePrefix": CLUSTER_NAME + "-master",
-        "nodeTemplateId": nt.id,
-        "quantity": 1,
-        "worker": False,
-    })
+    master_pool = client.create_node_pool(
+        {
+            "type": "nodetemplate",
+            "clusterId": cluster.id,
+            "controlPlane": True,
+            "etcd": True,
+            "hostnamePrefix": f"{CLUSTER_NAME}-master",
+            "nodeTemplateId": nt.id,
+            "quantity": 1,
+            "worker": False,
+        }
+    )
 
-    worker_pool1 = client.create_node_pool({
-        "type": "nodetemplate",
-        "clusterId": cluster.id,
-        "controlPlane": False,
-        "etcd": False,
-        "hostnamePrefix": CLUSTER_NAME + "-worker",
-        "nodeTemplateId": nt.id,
-        "quantity": 1,
-        "worker": True,
-    })
+    worker_pool1 = client.create_node_pool(
+        {
+            "type": "nodetemplate",
+            "clusterId": cluster.id,
+            "controlPlane": False,
+            "etcd": False,
+            "hostnamePrefix": f"{CLUSTER_NAME}-worker",
+            "nodeTemplateId": nt.id,
+            "quantity": 1,
+            "worker": True,
+        }
+    )
 
-    worker_pool2 = client.create_node_pool({
-        "type": "nodetemplate",
-        "clusterId": cluster.id,
-        "controlPlane": False,
-        "etcd": False,
-        "hostnamePrefix": CLUSTER_NAME + "-worker-cc",
-        "nodeTemplateId": ntcc.id,
-        "quantity": 1,
-        "worker": True,
-    })
+    worker_pool2 = client.create_node_pool(
+        {
+            "type": "nodetemplate",
+            "clusterId": cluster.id,
+            "controlPlane": False,
+            "etcd": False,
+            "hostnamePrefix": f"{CLUSTER_NAME}-worker-cc",
+            "nodeTemplateId": ntcc.id,
+            "quantity": 1,
+            "worker": True,
+        }
+    )
 
-    worker_pool3 = client.create_node_pool({
-        "type": "nodetemplate",
-        "clusterId": cluster.id,
-        "controlPlane": False,
-        "etcd": False,
-        "hostnamePrefix": CLUSTER_NAME + "-worker-dsc",
-        "nodeTemplateId": ntdsc.id,
-        "quantity": 1,
-        "worker": True,
-    })
+    worker_pool3 = client.create_node_pool(
+        {
+            "type": "nodetemplate",
+            "clusterId": cluster.id,
+            "controlPlane": False,
+            "etcd": False,
+            "hostnamePrefix": f"{CLUSTER_NAME}-worker-dsc",
+            "nodeTemplateId": ntdsc.id,
+            "quantity": 1,
+            "worker": True,
+        }
+    )
 
     client.wait_success(master_pool)
     client.wait_success(worker_pool1)

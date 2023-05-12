@@ -56,8 +56,12 @@ def test_multiclusterapp_create_with_members(admin_mc, admin_pc,
     remove_resource(user_member)
     user_not_member = user_factory()
     remove_resource(user_not_member)
-    members = [{"userPrincipalId": "local://"+user_member.user.id,
-                "accessType": "read-only"}]
+    members = [
+        {
+            "userPrincipalId": f"local://{user_member.user.id}",
+            "accessType": "read-only",
+        }
+    ]
     roles = ["cluster-owner", "project-member"]
 
     mcapp1 = client.create_multi_cluster_app(name=mcapp_name,
@@ -70,7 +74,7 @@ def test_multiclusterapp_create_with_members(admin_mc, admin_pc,
 
     # check who has access to the multiclusterapp
     # admin and user_member should be able to list it
-    id = "cattle-global-data:" + mcapp_name
+    id = f"cattle-global-data:{mcapp_name}"
     mcapp = client.by_id_multi_cluster_app(id)
     assert mcapp is not None
     um_client = user_member.client
@@ -94,8 +98,13 @@ def test_multiclusterapp_create_with_members(admin_mc, admin_pc,
 
     # add the special char * to indicate sharing of resource with all
     # authenticated users
-    new_members = [{"userPrincipalId": "local://"+user_member.user.id,
-                   "accessType": "read-only"}, {"groupPrincipalId": "*"}]
+    new_members = [
+        {
+            "userPrincipalId": f"local://{user_member.user.id}",
+            "accessType": "read-only",
+        },
+        {"groupPrincipalId": "*"},
+    ]
     client.update(mcapp, members=new_members, roles=roles)
 
     # now user_not_member should be able to access this mcapp without
@@ -103,7 +112,7 @@ def test_multiclusterapp_create_with_members(admin_mc, admin_pc,
     rbac = kubernetes.client.RbacAuthorizationV1Api(admin_mc.k8s_client)
     split = mcapp.id.split(":")
     name = split[1]
-    rb_name = name + "-m-r"
+    rb_name = f"{name}-m-r"
     wait_for(lambda: check_subject_in_rb(rbac, 'cattle-global-data',
                                          'system:authenticated', rb_name),
              timeout=60, fail_handler=lambda:
@@ -272,8 +281,9 @@ def test_multiclusterapp_user_update_roles(admin_mc, admin_pc, remove_resource,
     # add a user as a member with access-type owner
     user = user_factory()
     remove_resource(user)
-    members = [{"userPrincipalId": "local://" + user.user.id,
-                "accessType": "owner"}]
+    members = [
+        {"userPrincipalId": f"local://{user.user.id}", "accessType": "owner"}
+    ]
     mcapp1 = client.create_multi_cluster_app(name=mcapp_name,
                                              templateVersionId=temp_ver,
                                              targets=targets,
@@ -344,8 +354,9 @@ def test_add_projects(admin_mc, admin_pc, admin_cc, remove_resource):
                                  roles=["project-member"])
     remove_resource(mcapp1)
     wait_for_app(admin_pc, mcapp_name, 60)
-    p = client.create_project(name='test-' + random_str(),
-                              clusterId=admin_cc.cluster.id)
+    p = client.create_project(
+        name=f'test-{random_str()}', clusterId=admin_cc.cluster.id
+    )
     remove_resource(p)
     p = admin_cc.management.client.wait_success(p)
     client.action(obj=mcapp1, action_name="addProjects",
@@ -360,8 +371,9 @@ def test_remove_projects(admin_mc, admin_pc, admin_cc, remove_resource):
     client = admin_mc.client
     mcapp_name = random_str()
     temp_ver = "cattle-global-data:library-wordpress-1.0.5"
-    p = client.create_project(name='test-' + random_str(),
-                              clusterId=admin_cc.cluster.id)
+    p = client.create_project(
+        name=f'test-{random_str()}', clusterId=admin_cc.cluster.id
+    )
     remove_resource(p)
     p = admin_cc.management.client.wait_success(p)
     targets = [{"projectId": admin_pc.project.id}, {"projectId": p.id}]
@@ -433,7 +445,7 @@ def wait_for_app_condition(admin_pc, name, condition, timeout=60):
     interval = 0.5
     client = admin_pc.client
     cluster_id, project_id = admin_pc.project.id.split(':')
-    app_name = name+"-"+project_id
+    app_name = f"{name}-{project_id}"
     found = False
     while not found:
         if time.time() - start > timeout:
@@ -464,11 +476,11 @@ def test_mcapp_create_validation(admin_mc, admin_pc, custom_catalog,
     client = admin_mc.client
     set_server_version(client, "2.0.0")
 
-    cat_ns_name = "cattle-global-data:"+c_name
+    cat_ns_name = f"cattle-global-data:{c_name}"
 
     mcapp_data = {
         'name': random_str(),
-        'templateVersionId': cat_ns_name+"-chartmuseum-1.6.2",
+        'templateVersionId': f"{cat_ns_name}-chartmuseum-1.6.2",
         'targets': [{"projectId": admin_pc.project.id}],
         'roles': ["cluster-owner", "project-member"],
     }
@@ -482,7 +494,7 @@ def test_mcapp_create_validation(admin_mc, admin_pc, custom_catalog,
 
     # Second app requires a min of 2.0 so no error should be returned
     mcapp_data['name'] = random_str()
-    mcapp_data['templateVersionId'] = cat_ns_name+"-chartmuseum-1.6.0",
+    mcapp_data['templateVersionId'] = (f"{cat_ns_name}-chartmuseum-1.6.0", )
     mcapp2 = client.create_multi_cluster_app(mcapp_data)
     remove_resource(mcapp2)
     wait_for_app(admin_pc, mcapp_data['name'])
@@ -512,11 +524,11 @@ def test_mcapp_update_validation(admin_mc, admin_pc, custom_catalog,
     client = admin_mc.client
     set_server_version(client, "2.0.0")
 
-    cat_ns_name = "cattle-global-data:"+c_name
+    cat_ns_name = f"cattle-global-data:{c_name}"
 
     mcapp_data = {
         'name': random_str(),
-        'templateVersionId': cat_ns_name+"-chartmuseum-1.6.0",
+        'templateVersionId': f"{cat_ns_name}-chartmuseum-1.6.0",
         'targets': [{"projectId": admin_pc.project.id}],
         'roles': ["cluster-owner", "project-member"],
     }
@@ -529,7 +541,8 @@ def test_mcapp_update_validation(admin_mc, admin_pc, custom_catalog,
     # App upgrade requires a min of 2.1 so expect error
     with pytest.raises(ApiError) as e:
         mcapp1 = client.update_by_id_multi_cluster_app(
-            id=mcapp1.id, templateVersionId=cat_ns_name+"-chartmuseum-1.6.2")
+            id=mcapp1.id, templateVersionId=f"{cat_ns_name}-chartmuseum-1.6.2"
+        )
     assert e.value.error.status == 422
     assert e.value.error.message == 'rancher min version not met'
 
@@ -537,7 +550,8 @@ def test_mcapp_update_validation(admin_mc, admin_pc, custom_catalog,
     # App upgrade requires a max of 2.3 so expect error
     with pytest.raises(ApiError) as e:
         mcapp1 = client.update_by_id_multi_cluster_app(
-            id=mcapp1.id, templateVersionId=cat_ns_name+"-chartmuseum-1.6.2")
+            id=mcapp1.id, templateVersionId=f"{cat_ns_name}-chartmuseum-1.6.2"
+        )
     assert e.value.error.status == 422
     assert e.value.error.message == 'rancher max version exceeded'
 
@@ -557,36 +571,38 @@ def test_mcapp_rollback_validation(admin_mc, admin_pc, custom_catalog,
     client = admin_mc.client
     set_server_version(client, "2.1.0")
 
-    cat_ns_name = "cattle-global-data:"+c_name
+    cat_ns_name = f"cattle-global-data:{c_name}"
 
     mcapp_data = {
         'name': random_str(),
-        'templateVersionId': cat_ns_name+"-chartmuseum-1.6.0",
+        'templateVersionId': f"{cat_ns_name}-chartmuseum-1.6.0",
         'targets': [{"projectId": admin_pc.project.id}],
         'roles': ["cluster-owner", "project-member"],
-        "answers": [{
-            "type": "answer",
-            "clusterId": None,
-            "projectId": None,
-            "values": {
-                "defaultImage": "true",
-                "image.repository": "chartmuseum/chartmuseum",
-                "image.tag": "v0.7.1",
-                "env.open.STORAGE": "local",
-                "gcp.secret.enabled": "false",
-                "gcp.secret.key": "credentials.json",
-                "persistence.enabled": "true",
-                "persistence.size": "10Gi",
-                "ingress.enabled": "true",
-                "ingress.hosts[0]": "xip.io",
-                "service.type": "NodePort",
-                "env.open.SHOW_ADVANCED": "false",
-                "env.open.DEPTH": "0",
-                "env.open.ALLOW_OVERWRITE": "false",
-                "env.open.AUTH_ANONYMOUS_GET": "false",
-                "env.open.DISABLE_METRICS": "true"
+        "answers": [
+            {
+                "type": "answer",
+                "clusterId": None,
+                "projectId": None,
+                "values": {
+                    "defaultImage": "true",
+                    "image.repository": "chartmuseum/chartmuseum",
+                    "image.tag": "v0.7.1",
+                    "env.open.STORAGE": "local",
+                    "gcp.secret.enabled": "false",
+                    "gcp.secret.key": "credentials.json",
+                    "persistence.enabled": "true",
+                    "persistence.size": "10Gi",
+                    "ingress.enabled": "true",
+                    "ingress.hosts[0]": "xip.io",
+                    "service.type": "NodePort",
+                    "env.open.SHOW_ADVANCED": "false",
+                    "env.open.DEPTH": "0",
+                    "env.open.ALLOW_OVERWRITE": "false",
+                    "env.open.AUTH_ANONYMOUS_GET": "false",
+                    "env.open.DISABLE_METRICS": "true",
+                },
             }
-        }]
+        ],
     }
 
     # First app requires a min rancher version of 2.0 so no error
@@ -598,7 +614,7 @@ def test_mcapp_rollback_validation(admin_mc, admin_pc, custom_catalog,
 
     original_rev = mcapp1.revisions().data[0].name
 
-    mcapp1.templateVersionId = cat_ns_name+"-chartmuseum-1.6.2"
+    mcapp1.templateVersionId = f"{cat_ns_name}-chartmuseum-1.6.2"
 
     # Upgrade the app to get a rollback version
     mcapp1 = client.update_by_id_multi_cluster_app(mcapp1.id, mcapp1)
@@ -631,19 +647,21 @@ def test_perform_mca_action_read_only(admin_mc, admin_pc, remove_resource,
 
     # Create a read-only user binding.
     prtb1 = admin_mc.client.create_project_role_template_binding(
-        name="prtb-" + random_str(),
+        name=f"prtb-{random_str()}",
         userId=user.user.id,
         projectId=project.id,
-        roleTemplateId="read-only")
+        roleTemplateId="read-only",
+    )
     remove_resource(prtb1)
     wait_until_available(user.client, project)
 
     # Then, create a member user binding.
     prtb2 = admin_mc.client.create_project_role_template_binding(
-        name="prtb-" + random_str(),
+        name=f"prtb-{random_str()}",
         userId=user_member.user.id,
         projectId=project.id,
-        roleTemplateId="project-member")
+        roleTemplateId="project-member",
+    )
     remove_resource(prtb2)
     wait_until_available(user_member.client, project)
     user_pc = user_project_client(user, project)
@@ -653,8 +671,8 @@ def test_perform_mca_action_read_only(admin_mc, admin_pc, remove_resource,
     # project-member user should have permissions by default since their role
     # is specified in the MCA creation.
     mcapp_name = random_str()
-    mcapp_user_read_only = "local://" + user.user.id
-    mcapp_user_member = "local://" + user_member.user.id
+    mcapp_user_read_only = f"local://{user.user.id}"
+    mcapp_user_member = f"local://{user_member.user.id}"
     mcapp = client.create_multi_cluster_app(
         name=mcapp_name,
         templateVersionId="cattle-global-data:library-docker-registry-1.9.2",
@@ -693,7 +711,7 @@ def wait_for_app(admin_pc, name, timeout=60):
     interval = 0.5
     client = admin_pc.client
     project_id = admin_pc.project.id.split(':')[1]
-    app_name = name+"-"+project_id
+    app_name = f"{name}-{project_id}"
     found = False
     while not found:
         if time.time() - start > timeout:
@@ -714,23 +732,17 @@ def rtb_cb(client, rtb):
 
 
 def check_updated_projects(admin_mc, mcapp_name, projects):
-    mcapp_projects = []
-    id = "cattle-global-data:" + mcapp_name
+    id = f"cattle-global-data:{mcapp_name}"
     mcapp = admin_mc.client.by_id_multi_cluster_app(id)
-    for t in mcapp.targets:
-        mcapp_projects.append(t.projectId)
-    if mcapp_projects == projects:
-        return True
-    return False
+    mcapp_projects = [t.projectId for t in mcapp.targets]
+    return mcapp_projects == projects
 
 
 def check_updated_roles(admin_mc, mcapp_name, roles):
-    id = "cattle-global-data:" + mcapp_name
+    id = f"cattle-global-data:{mcapp_name}"
     mcapp = admin_mc.client.by_id_multi_cluster_app(id)
-    if mcapp is not None and mcapp.roles == roles:
-        return True
-    return False
+    return mcapp is not None and mcapp.roles == roles
 
 
 def fail_handler(resource):
-    return "failed waiting for multiclusterapp " + resource + " to get updated"
+    return f"failed waiting for multiclusterapp {resource} to get updated"

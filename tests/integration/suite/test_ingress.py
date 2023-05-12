@@ -51,7 +51,7 @@ def test_ingress(admin_pc, admin_cc_client):
             'image': 'nginx',
         }])
 
-    name = random_str() + "." + random_str()
+    name = f"{random_str()}.{random_str()}"
     ingress = client.create_ingress(name=name,
                                     namespaceId=ns.id,
                                     rules=[{
@@ -134,7 +134,7 @@ def test_ingress_rules_same_hostPortPath(admin_pc, admin_cc_client):
     assert path.path == '/'
     assert path.targetPort == 80
     assert len(path.workloadIds) == 2
-    assert set(path.workloadIds) == set([workload1.id, workload2.id])
+    assert set(path.workloadIds) == {workload1.id, workload2.id}
     assert path.serviceId is None
 
     client.delete(ns)

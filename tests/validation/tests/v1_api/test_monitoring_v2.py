@@ -81,28 +81,27 @@ def check_monitoring_exist():
     app = client.by_id_catalog_cattle_io_app(m_app)
     crd = client.by_id_catalog_cattle_io_app(m_crd)
 
-    ns_exist = False if ns is None else True
-    app_deployed = False if app is None else True
-    crd_app_deployed = False if crd is None else True
+    ns_exist = ns is not None
+    app_deployed = app is not None
+    crd_app_deployed = crd is not None
     return ns_exist or app_deployed or crd_app_deployed
 
 
 def get_chart_latest_version(catalog, chart_name):
-    headers = {"Accept": "application/json",
-               "Authorization": "Bearer " + USER_TOKEN}
+    headers = {
+        "Accept": "application/json",
+        "Authorization": f"Bearer {USER_TOKEN}",
+    }
     url = catalog["links"]["index"]
     response = requests.get(url=url, verify=False, headers=headers)
-    assert response.status_code == 200, \
-        "failed to get the response from {}".format(url)
-    assert response.content is not None, \
-        "no chart is returned from {}".format(url)
+    assert response.status_code == 200, f"failed to get the response from {url}"
+    assert response.content is not None, f"no chart is returned from {url}"
     res = json.loads(response.content)
-    assert chart_name in res["entries"].keys(), \
-        "failed to find the chart {} from the chart repo".format(chart_name)
+    assert (
+        chart_name in res["entries"].keys()
+    ), f"failed to find the chart {chart_name} from the chart repo"
     charts = res['entries'][chart_name]
-    versions = []
-    for chart in charts:
-        versions.append(chart["version"])
+    versions = [chart["version"] for chart in charts]
     latest = versions[0]
     for version in versions:
         if semver.compare(latest, version) < 0:

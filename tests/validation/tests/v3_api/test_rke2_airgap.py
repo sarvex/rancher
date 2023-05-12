@@ -17,25 +17,20 @@ def test_deploy_airgap_rke2_private_registry():
 
     failures = add_rke2_images_to_private_registry(bastion_node,
                                                    RANCHER_RKE2_VERSION)
-    assert failures == [], "Failed to add images: {}".format(failures)
+    assert failures == [], f"Failed to add images: {failures}"
     ag_nodes = prepare_airgap_rke2(bastion_node, NUMBER_OF_INSTANCES,
                                    'private_registry')
     assert len(ag_nodes) == NUMBER_OF_INSTANCES
 
     print(
-        '{} airgapped rke2 instance(s) created.\n'
-        'Connect to these and run commands by connecting to bastion node, '
-        'then connecting to these:\n'
-        'ssh -i {}.pem {}@NODE_PRIVATE_IP'.format(
-            NUMBER_OF_INSTANCES, bastion_node.ssh_key_name, AWS_USER))
+        f'{NUMBER_OF_INSTANCES} airgapped rke2 instance(s) created.\nConnect to these and run commands by connecting to bastion node, then connecting to these:\nssh -i {bastion_node.ssh_key_name}.pem {AWS_USER}@NODE_PRIVATE_IP'
+    )
     for ag_node in ag_nodes:
         assert ag_node.private_ip_address is not None
         assert ag_node.public_ip_address is None
 
-    server_ops = RKE2_SERVER_OPTIONS + " --system-default-registry={}".format(
-        bastion_node.host_name)
-    agent_ops = RKE2_AGENT_OPTIONS + " --system-default-registry={}".format(
-        bastion_node.host_name)
+    server_ops = f"{RKE2_SERVER_OPTIONS} --system-default-registry={bastion_node.host_name}"
+    agent_ops = f"{RKE2_AGENT_OPTIONS} --system-default-registry={bastion_node.host_name}"
 
     deploy_airgap_rke2_cluster(bastion_node, ag_nodes, server_ops, agent_ops)
 
@@ -53,11 +48,8 @@ def test_deploy_airgap_rke2_tarball():
     assert len(ag_nodes) == NUMBER_OF_INSTANCES
 
     print(
-        '{} airgapped rke2 instance(s) created.\n'
-        'Connect to these and run commands by connecting to bastion node, '
-        'then connecting to these:\n'
-        'ssh -i {}.pem {}@NODE_PRIVATE_IP'.format(
-            NUMBER_OF_INSTANCES, bastion_node.ssh_key_name, AWS_USER))
+        f'{NUMBER_OF_INSTANCES} airgapped rke2 instance(s) created.\nConnect to these and run commands by connecting to bastion node, then connecting to these:\nssh -i {bastion_node.ssh_key_name}.pem {AWS_USER}@NODE_PRIVATE_IP'
+    )
     for ag_node in ag_nodes:
         assert ag_node.private_ip_address is not None
         assert ag_node.public_ip_address is None
@@ -71,16 +63,13 @@ def test_deploy_airgap_rke2_tarball():
 
 
 def deploy_noauth_bastion_server():
-    node_name = AG_HOST_NAME + "-noauthbastion"
+    node_name = f"{AG_HOST_NAME}-noauthbastion"
     # Create Bastion Server in AWS
     bastion_node = AmazonWebServices().create_node(node_name)
     setup_ssh_key(bastion_node)
 
     # Generate self signed certs
-    generate_certs_command = \
-        'mkdir -p certs && sudo openssl req -newkey rsa:4096 -nodes -sha256 ' \
-        '-keyout certs/domain.key -x509 -days 365 -out certs/domain.crt ' \
-        '-subj "/C=US/ST=AZ/O=Rancher QA/CN={}"'.format(bastion_node.host_name)
+    generate_certs_command = f'mkdir -p certs && sudo openssl req -newkey rsa:4096 -nodes -sha256 -keyout certs/domain.key -x509 -days 365 -out certs/domain.crt -subj "/C=US/ST=AZ/O=Rancher QA/CN={bastion_node.host_name}"'
     bastion_node.execute_command(generate_certs_command)
 
     # Ensure docker uses the certs that were generated
@@ -99,9 +88,9 @@ def deploy_noauth_bastion_server():
     bastion_node.execute_command(run_private_registry_command)
     time.sleep(5)
 
-    print("Bastion Server Details:\nNAME: {}\nHOST NAME: {}\n"
-          "INSTANCE ID: {}\n".format(node_name, bastion_node.host_name,
-                                     bastion_node.provider_node_id))
+    print(
+        f"Bastion Server Details:\nNAME: {node_name}\nHOST NAME: {bastion_node.host_name}\nINSTANCE ID: {bastion_node.provider_node_id}\n"
+    )
 
     return bastion_node
 
@@ -130,11 +119,14 @@ def add_rke2_images_to_private_registry(bastion_node, rke2_version):
 
 
 def prepare_airgap_rke2(bastion_node, number_of_nodes, method):
-    node_name = AG_HOST_NAME + "-rke2-airgap"
+    node_name = f"{AG_HOST_NAME}-rke2-airgap"
     # Create Airgap Node in AWS
     ag_nodes = AmazonWebServices().create_multiple_nodes(
         number_of_nodes, node_name, public_ip=False)
 
+    ag_node_make_executable = \
+        'sudo mv ./rke2 /usr/local/bin/rke2 && ' \
+        'sudo chmod +x /usr/local/bin/rke2'
     for num, ag_node in enumerate(ag_nodes):
         # Copy relevant rke2 files to airgapped node
         ag_node_copy_files = \
@@ -143,9 +135,6 @@ def prepare_airgap_rke2(bastion_node, number_of_nodes, method):
                                     ag_node.private_ip_address)
         bastion_node.execute_command(ag_node_copy_files)
 
-        ag_node_make_executable = \
-            'sudo mv ./rke2 /usr/local/bin/rke2 && ' \
-            'sudo chmod +x /usr/local/bin/rke2'
         run_command_on_airgap_node(bastion_node, ag_node,
                                    ag_node_make_executable)
 
@@ -177,8 +166,9 @@ def prepare_airgap_rke2(bastion_node, number_of_nodes, method):
             run_command_on_airgap_node(bastion_node, ag_node,
                                        ag_node_add_tarball_to_dir)
 
-        print("Airgapped RKE2 Instance Details:\nNAME: {}-{}\nPRIVATE IP: {}\n"
-              "".format(node_name, num, ag_node.private_ip_address))
+        print(
+            f"Airgapped RKE2 Instance Details:\nNAME: {node_name}-{num}\nPRIVATE IP: {ag_node.private_ip_address}\n"
+        )
     return ag_nodes
 
 
@@ -188,9 +178,7 @@ def deploy_airgap_rke2_cluster(bastion_node, ag_nodes, server_ops, agent_ops):
     for num, ag_node in enumerate(ag_nodes):
         if num == 0:
             # Install rke2 server
-            install_rke2_server = \
-                'sudo rke2 server --write-kubeconfig-mode 644 {} ' \
-                '> /dev/null 2>&1 &'.format(server_ops)
+            install_rke2_server = f'sudo rke2 server --write-kubeconfig-mode 644 {server_ops} > /dev/null 2>&1 &'
             run_command_on_airgap_node(bastion_node, ag_node,
                                        install_rke2_server)
             time.sleep(30)
@@ -198,10 +186,7 @@ def deploy_airgap_rke2_cluster(bastion_node, ag_nodes, server_ops, agent_ops):
             token = run_command_on_airgap_node(bastion_node, ag_node,
                                                token_command)[0].strip()
         else:
-            install_rke2_worker = \
-                'sudo rke2 agent --server https://{}:9345 ' \
-                '--token {} {} > /dev/null 2>&1 &'.format(
-                    server_ip, token, agent_ops)
+            install_rke2_worker = f'sudo rke2 agent --server https://{server_ip}:9345 --token {token} {agent_ops} > /dev/null 2>&1 &'
             run_command_on_airgap_node(bastion_node, ag_node,
                                        install_rke2_worker)
             time.sleep(15)

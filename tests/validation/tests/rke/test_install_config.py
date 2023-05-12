@@ -31,11 +31,8 @@ def test_install_config_3(test_name, cloud_provider, rke_client, kubectl):
     """
     rke_template = 'cluster_install_config_3.yml.j2'
     nodes = cloud_provider.create_multiple_nodes(3, test_name)
-    # set node_name to non-resolvable name for hostname_override
-    index = 0
-    for node in nodes:
+    for index, node in enumerate(nodes):
         node.node_name = "{0}-{1}".format(test_name, index)
-        index += 1
     create_and_validate(
         cloud_provider, rke_client, kubectl, rke_template, nodes,
         remove_nodes=True)
@@ -86,11 +83,8 @@ def test_install_config_7(test_name, cloud_provider, rke_client, kubectl):
     """
     rke_template = 'cluster_install_config_7.yml.j2'
     nodes = cloud_provider.create_multiple_nodes(3, test_name)
-    # set node_name to non-resolvable name for hostname_override
-    index = 0
-    for node in nodes:
+    for index, node in enumerate(nodes):
         node.node_name = "{0}-{1}".format(test_name, index)
-        index += 1
     create_and_validate(
         cloud_provider, rke_client, kubectl, rke_template, nodes,
         remove_nodes=True, etcd_private_ip=True)
@@ -115,9 +109,10 @@ def test_install_config_9(test_name, cloud_provider, rke_client, kubectl):
     key_name = 'install-config-9'
     rke_template = 'cluster_install_config_9.yml.j2'
     public_key = cloud_provider.generate_ssh_key(key_name)
-    cloud_provider.import_ssh_key(key_name + '.pub', public_key)
+    cloud_provider.import_ssh_key(f'{key_name}.pub', public_key)
     nodes = cloud_provider.create_multiple_nodes(
-        3, test_name, key_name=key_name + '.pub')
+        3, test_name, key_name=f'{key_name}.pub'
+    )
     create_and_validate(
         cloud_provider, rke_client, kubectl, rke_template, nodes,
         remove_nodes=True)

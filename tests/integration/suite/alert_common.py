@@ -10,7 +10,7 @@ class MockServer(Thread):
         from flask import Flask
         self.port = port
         self.app = Flask(__name__)
-        self.url = "http://127.0.0.1:%s" % self.port
+        self.url = f"http://127.0.0.1:{self.port}"
 
         self.app.add_url_rule("/shutdown", view_func=self._shutdown_server)
 
@@ -22,8 +22,10 @@ class MockServer(Thread):
         return 'Server shutting down...'
 
     def shutdown_server(self):
-        requests.get("http://127.0.0.1:%s/shutdown" % self.port,
-                     headers={'Connection': 'close'})
+        requests.get(
+            f"http://127.0.0.1:{self.port}/shutdown",
+            headers={'Connection': 'close'},
+        )
         self.join()
 
     def run(self):
@@ -49,7 +51,6 @@ class MockReceiveAlert(MockServer):
         self.app.add_url_rule("/dingtalk/<path:url>/",
                               view_func=self.api_dingtalk,
                               methods=('POST',))
-        pass
 
     def __init__(self, port):
         super().__init__(port)

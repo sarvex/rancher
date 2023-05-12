@@ -369,7 +369,6 @@ def test_rbac_registry_edit_all_namespace(role):
                             registries=new_registries)
         assert e.value.error.status == 404
         assert e.value.error.code == 'NotFound'
-        delete_registry(p_client_for_c_owner, registry)
     else:
         create_validate_workload_with_invalid_registry(p_client, ns)
         # Update registry with correct username and password
@@ -381,7 +380,8 @@ def test_rbac_registry_edit_all_namespace(role):
         # Validate workload in all namespaces after registry update
         create_validate_workload(p_client, ns)
         create_validate_workload(p_client, new_ns)
-        delete_registry(p_client_for_c_owner, registry)
+
+    delete_registry(p_client_for_c_owner, registry)
 
 
 @if_test_rbac
@@ -436,7 +436,7 @@ def delete_registry(client, registry):
         ns_name = namespaceData[i]['name']
         print(i, ns_name)
 
-        command = " get secret " + registryname + " --namespace=" + ns_name
+        command = f" get secret {registryname} --namespace={ns_name}"
         print("Command to obtain the secret")
         print(command)
         result = execute_kubectl_cmd(command, json_out=False, stderr=True)
@@ -474,10 +474,9 @@ def create_workload(p_client, ns):
             "stdin": True,
             "imagePullPolicy": "Always"
             }]
-    workload = p_client.create_workload(name=workload_name,
-                                        containers=con,
-                                        namespaceId=ns.id)
-    return workload
+    return p_client.create_workload(
+        name=workload_name, containers=con, namespaceId=ns.id
+    )
 
 
 def create_validate_workload(p_client, ns):
@@ -510,7 +509,7 @@ def validate_wl_fail_to_pullimage(client, workload, timeout=DEFAULT_TIMEOUT):
     time.sleep(2)
     start = time.time()
     pods = client.list_pod(workloadId=workload.id).data
-    assert len(pods) != 0, "No pods in workload - {}".format(workload)
+    assert len(pods) != 0, f"No pods in workload - {workload}"
     message = pods[0].containers[0].transitioningMessage
 
     while 'ImagePullBackOff:' not in message:
@@ -520,9 +519,9 @@ def validate_wl_fail_to_pullimage(client, workload, timeout=DEFAULT_TIMEOUT):
                 "'ImagePullBackOff' error")
         time.sleep(1)
         pods = client.list_pod(workloadId=workload.id).data
-        assert len(pods) != 0, "No pods in workload - {}".format(workload)
+        assert len(pods) != 0, f"No pods in workload - {workload}"
         message = pods[0].containers[0].transitioningMessage
-    print("{} - fails to pull image".format(workload))
+    print(f"{workload} - fails to pull image")
 
 
 @ pytest.fixture(scope='module', autouse="True")

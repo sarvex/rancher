@@ -83,7 +83,6 @@ def test_rbac_hpa_create_negative(role, remove_resource):
         p_client = get_project_client_for_token(unshared_project, user_token)
         hpa, workload = create_hpa(p_client, ns)
         remove_resource(hpa)
-        remove_resource(workload)
     else:
         unshared_project = rbac_get_unshared_project()
         ns = rbac_get_unshared_ns()
@@ -100,7 +99,8 @@ def test_rbac_hpa_create_negative(role, remove_resource):
         assert e.value.error.status == 403
         assert e.value.error.code == 'Forbidden'
 
-        remove_resource(workload)
+
+    remove_resource(workload)
 
 
 @if_test_rbac
@@ -205,8 +205,6 @@ def test_rbac_hpa_delete_negative(role, remove_resource):
         p_client = get_project_client_for_token(unshared_project, user_token)
         hpa, workload = create_hpa(p_client, ns)
         delete_hpa(p_client, hpa, ns)
-        remove_resource(hpa)
-        remove_resource(workload)
     else:
         unshared_project = rbac_get_unshared_project()
         ns = rbac_get_unshared_ns()
@@ -223,8 +221,9 @@ def test_rbac_hpa_delete_negative(role, remove_resource):
             delete_hpa(p_client, hpa, ns)
         assert e.value.error.status == 403
         assert e.value.error.code == 'Forbidden'
-        remove_resource(hpa)
-        remove_resource(workload)
+
+    remove_resource(hpa)
+    remove_resource(workload)
 
 
 @if_test_rbac
@@ -281,8 +280,6 @@ def test_rbac_hpa_list_negative(remove_resource, role):
         assert len(hpadata) == 1
         assert hpadata[0].type == "horizontalPodAutoscaler"
         assert hpadata[0].name == hpaname
-        remove_resource(hpa)
-        remove_resource(workload)
     else:
         cluster_owner_token = rbac_get_user_token_by_role(CLUSTER_OWNER)
         unshared_project = rbac_get_unshared_project()
@@ -298,8 +295,9 @@ def test_rbac_hpa_list_negative(remove_resource, role):
         hpadict = user_client.list_horizontalPodAutoscaler(name=hpaname)
         hpadata = hpadict.get('data')
         assert len(hpadata) == 0
-        remove_resource(hpa)
-        remove_resource(workload)
+
+    remove_resource(hpa)
+    remove_resource(workload)
 
 
 def verify_hpa_cluster_member_edit(remove_resource):
@@ -466,24 +464,22 @@ def delete_hpa(p_client, hpa, ns):
     p_client.delete(hpa)
     # Sleep to allow HPA to be deleted
     time.sleep(5)
-    timeout = 30
     hpadict = p_client.list_horizontalPodAutoscaler(name=hpaname)
     print(hpadict.get('data'))
     start = time.time()
     if len(hpadict.get('data')) > 0:
         testdata = hpadict.get('data')
+        timeout = 30
         while hpaname in testdata[0]['data']:
             if time.time() - start > timeout:
                 raise AssertionError("Timed out waiting for deletion")
             time.sleep(.5)
             hpadict = p_client.list_horizontalPodAutoscaler(name=hpaname)
             testdata = hpadict.get('data')
-        assert True
     if len(hpadict.get('data')) == 0:
-        assert True
-
+        pass
     # Verify hpa is deleted by "kubectl get hpa" command
-    command = "get hpa {} --namespace {}".format(hpa['name'], ns.name)
+    command = f"get hpa {hpa['name']} --namespace {ns.name}"
     print("Command to obtain the hpa")
     print(command)
     result = execute_kubectl_cmd(command, json_out=False, stderr=True)
@@ -491,8 +487,6 @@ def delete_hpa(p_client, hpa, ns):
 
     print("Verify that the hpa does not exist "
           "and the error code returned is non zero ")
-    if result != 0:
-        assert True
 
 
 def create_workload(p_client, ns):

@@ -358,7 +358,7 @@ def verify_cis_scan_report(
         report_link, token, test_total,
         tests_passed, tests_skipped,
         tests_failed, tests_na):
-    head = {'Authorization': 'Bearer ' + token}
+    head = {'Authorization': f'Bearer {token}'}
     response = requests.get(report_link, verify=False, headers=head)
     report = response.json()
     assert report["total"] == test_total, \
@@ -400,7 +400,7 @@ def wait_for_scan_active(cluster_scan_report_id,
     # wait until scan is active
     start = time.time()
     state_scan = scan_detail["state"]
-    while state_scan != "pass" and state_scan != "fail":
+    while state_scan not in ["pass", "fail"]:
         if time.time() - start > timeout:
             raise AssertionError(
                 "Timed out waiting for state of scan report to get to active")
@@ -410,8 +410,7 @@ def wait_for_scan_active(cluster_scan_report_id,
         state_scan = scan_detail["state"]
         print(state_scan)
     scan_detail_data = client.list_clusterScan(name=cluster_scan_report_id)
-    scan_detail = scan_detail_data.data[0]
-    return scan_detail
+    return scan_detail_data.data[0]
 
 
 def wait_for_cis_pod_remove(cluster,

@@ -28,10 +28,12 @@ fluentd_aggregator_answers = {"defaultImage": "true",
                               "output.flushInterval": "5s",
                               "output.customConf": "<match **.**>\n  @type stdout\n</match>"}
 
-CATTLE_ClUSTER_LOGGING_FLUENTD_TEST = \
-    CATTLE_TEST_URL + "/v3/clusterloggings?action=test"
-CATTLE_PROJECT_LOGGING_FLUENTD_TEST = \
-    CATTLE_TEST_URL + "/v3/projectloggings?action=test"
+CATTLE_ClUSTER_LOGGING_FLUENTD_TEST = (
+    f"{CATTLE_TEST_URL}/v3/clusterloggings?action=test"
+)
+CATTLE_PROJECT_LOGGING_FLUENTD_TEST = (
+    f"{CATTLE_TEST_URL}/v3/projectloggings?action=test"
+)
 FLUENTD_AGGREGATOR_CATALOG_ID = "catalog://?catalog=library&template=fluentd-aggregator&version=0.3.1"
 
 
@@ -41,18 +43,18 @@ def test_send_log_to_fluentd(setup_fluentd_aggregator):
 
     valid_endpoint = namespace["name_prefix"] + "-fluentd-aggregator" + \
         "." + namespace["ns"].name + ".svc.cluster.local:24224"
-    print("fluentd aggregator endpoint:" + valid_endpoint)
+    print(f"fluentd aggregator endpoint:{valid_endpoint}")
     send_log_to_fluentd_aggregator(CATTLE_ClUSTER_LOGGING_FLUENTD_TEST, valid_endpoint, cluster.id, project.id, USER_TOKEN)
     send_log_to_fluentd_aggregator(CATTLE_PROJECT_LOGGING_FLUENTD_TEST, valid_endpoint, cluster.id, project.id, USER_TOKEN)
 
     bad_format_endpoint = "http://fluentd.com:9092"
-    print("fluentd aggregator endpoint:" + bad_format_endpoint)
+    print(f"fluentd aggregator endpoint:{bad_format_endpoint}")
     send_log_to_fluentd_aggregator(CATTLE_ClUSTER_LOGGING_FLUENTD_TEST, bad_format_endpoint, cluster.id, project.id, USER_TOKEN, expected_status=500)
     send_log_to_fluentd_aggregator(CATTLE_PROJECT_LOGGING_FLUENTD_TEST, bad_format_endpoint, cluster.id, project.id, USER_TOKEN, expected_status=500)
 
 
 def send_log_to_fluentd_aggregator(url, endpoint, clusterId, projectId, token, expected_status=204):
-    headers = {'Authorization': 'Bearer ' + token}
+    headers = {'Authorization': f'Bearer {token}'}
     fluentdConfig = {
         "fluentServers": [
             {
@@ -134,7 +136,7 @@ def test_project_fluentd_target(request):
     # wait for config to sync
     time.sleep(60)
     config = get_fluentd_config("project.conf")
-    assert fluentd_ssl_configure("project_" + wrap_project_name) not in config
+    assert fluentd_ssl_configure(f"project_{wrap_project_name}") not in config
     assert fluentd_server_configure() in config
 
     ssl_config = fluentd_target_with_ssl()
@@ -146,7 +148,7 @@ def test_project_fluentd_target(request):
     # wait for config to sync
     time.sleep(60)
     config = get_fluentd_config("project.conf")
-    assert fluentd_ssl_configure("project_" + wrap_project_name) in config
+    assert fluentd_ssl_configure(f"project_{wrap_project_name}") in config
     assert fluentd_server_configure() in config
 
 
@@ -156,39 +158,41 @@ def wait_for_logging_app():
 
 
 def fluentd_target_with_ssl():
-    return {"certificate": "-----BEGIN CERTIFICATE-----\
+    return {
+        "certificate": "-----BEGIN CERTIFICATE-----\
                     ----END CERTIFICATE-----",
-            "clientCert": "-----BEGIN CERTIFICATE-----\
+        "clientCert": "-----BEGIN CERTIFICATE-----\
                     ----END CERTIFICATE-----",
-            "clientKey": "-----BEGIN PRIVATE KEY-----\
+        "clientKey": "-----BEGIN PRIVATE KEY-----\
                     ----END PRIVATE KEY-----",
-            "compress": True,
-            "enableTls": True,
-            "fluentServers": [
-                {
-                    "endpoint": endpoint_host + ":" + endpoint_port,
-                    "username": username,
-                    "password": password,
-                    "sharedKey": shared_key,
-                    "weight": weight
-                }
-            ],
+        "compress": True,
+        "enableTls": True,
+        "fluentServers": [
+            {
+                "endpoint": f"{endpoint_host}:{endpoint_port}",
+                "username": username,
+                "password": password,
+                "sharedKey": shared_key,
+                "weight": weight,
             }
+        ],
+    }
 
 
 def fluentd_target_without_ssl():
-    return {"compress": True,
-            "enableTls": True,
-            "fluentServers": [
-                {
-                    "endpoint": endpoint_host + ":" + endpoint_port,
-                    "username": username,
-                    "password": password,
-                    "sharedKey": shared_key,
-                    "weight": weight
-                }
-            ],
+    return {
+        "compress": True,
+        "enableTls": True,
+        "fluentServers": [
+            {
+                "endpoint": f"{endpoint_host}:{endpoint_port}",
+                "username": username,
+                "password": password,
+                "sharedKey": shared_key,
+                "weight": weight,
             }
+        ],
+    }
 
 
 def fluentd_ssl_configure(name):
@@ -215,8 +219,7 @@ def get_system_project_client():
                                          clusterId=cluster.id).data
     assert len(projects) == 1
     project = projects[0]
-    sys_p_client = get_project_client_for_token(project, USER_TOKEN)
-    return sys_p_client
+    return get_project_client_for_token(project, USER_TOKEN)
 
 
 def get_namespaced_secret(name):
@@ -234,10 +237,7 @@ def get_fluentd_config(key):
 
 
 def strip_whitespace(ws):
-    new_str = []
-    for s in ws.strip().splitlines(True):
-        if s.strip():
-            new_str.append(s.strip())
+    new_str = [s.strip() for s in ws.strip().splitlines(True) if s.strip()]
     return "\n".join(new_str)
 
 

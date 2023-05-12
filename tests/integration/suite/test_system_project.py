@@ -5,22 +5,25 @@ from .conftest import wait_for
 
 systemProjectLabel = "authz.management.cattle.io/system-project"
 defaultProjectLabel = "authz.management.cattle.io/default-project"
-initial_system_namespaces = set(["kube-node-lease",
-                                 "kube-system",
-                                 "cattle-system",
-                                 "kube-public",
-                                 "cattle-global-data",
-                                 "cattle-global-nt",
-                                 "cattle-fleet-system"])
+initial_system_namespaces = {
+    "kube-node-lease",
+    "kube-system",
+    "cattle-system",
+    "kube-public",
+    "cattle-global-data",
+    "cattle-global-nt",
+    "cattle-fleet-system",
+}
 loggingNamespace = "cattle-logging"
 
 
 def test_system_project_created(admin_cc):
     projects = admin_cc.management.client.list_project(
         clusterId=admin_cc.cluster.id)
-    initial_projects = {}
-    initial_projects["Default"] = defaultProjectLabel
-    initial_projects["System"] = systemProjectLabel
+    initial_projects = {
+        "Default": defaultProjectLabel,
+        "System": systemProjectLabel,
+    }
     required_projects = []
 
     for project in projects:
@@ -37,17 +40,14 @@ def test_system_project_created(admin_cc):
 def test_system_namespaces_assigned(admin_cc):
     projects = admin_cc.management.client.list_project(
         clusterId=admin_cc.cluster.id)
-    systemProject = None
-    for project in projects:
-        if project['name'] == "System":
-            systemProject = project
-            break
+    systemProject = next(
+        (project for project in projects if project['name'] == "System"), None
+    )
     assert systemProject is not None
 
     system_namespaces = admin_cc.client.list_namespace(
         projectId=systemProject.id)
-    system_namespaces_names = set(
-        [ns['name'] for ns in system_namespaces])
+    system_namespaces_names = {ns['name'] for ns in system_namespaces}
 
     # If clusterLogging tests run before this, cattle-logging
     # will be present in current system_namespaces, removing it
@@ -63,11 +63,9 @@ def test_system_project_cant_be_deleted(admin_mc, admin_cc):
     """
     projects = admin_cc.management.client.list_project(
         clusterId=admin_cc.cluster.id)
-    system_project = None
-    for project in projects:
-        if project['name'] == "System":
-            system_project = project
-            break
+    system_project = next(
+        (project for project in projects if project['name'] == "System"), None
+    )
     assert system_project is not None
 
     # Attempting to delete the template should raise an ApiError
@@ -89,10 +87,7 @@ def test_system_namespaces_default_svc_account(admin_mc):
 
         def _check_system_sa_flag():
             if ns in system_namespaces and ns != "kube-system":
-                if sa.automount_service_account_token is False:
-                    return True
-                else:
-                    return False
+                return sa.automount_service_account_token is False
             else:
                 return True
 

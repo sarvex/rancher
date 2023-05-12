@@ -12,7 +12,7 @@ class KubectlClient(object):
 
     def __init__(self):
         self._kube_config_path = None
-        self._hide = False if DEBUG.lower() == 'true' else True
+        self._hide = DEBUG.lower() != 'true'
 
     @property
     def kube_config_path(self):
@@ -24,9 +24,7 @@ class KubectlClient(object):
 
     @staticmethod
     def _load_json(output):
-        if output == '':
-            return None
-        return json.loads(output)
+        return None if output == '' else json.loads(output)
 
     def _default_output_json(self, **cli_options):
         """
@@ -55,11 +53,8 @@ class KubectlClient(object):
             # reserved word
             k = 'as' if k == 'as_user' else k
             # k = 'all' if k == 'all_' else k
-            if v is False or v is True:
-                value = str(v).lower()
-            else:
-                value = v
-            command_options += " --{}={}".format(k.replace('_', '-'), value)
+            value = str(v).lower() if v is False or v is True else v
+            command_options += f" --{k.replace('_', '-')}={value}"
         return command_options
 
     def execute_kubectl_cmd(self, cmd, json_out=True):
@@ -67,7 +62,7 @@ class KubectlClient(object):
             self.kube_config_path, cmd)
         if json_out:
             command += ' -o json'
-        print("Running kubectl command: {}".format(command))
+        print(f"Running kubectl command: {command}")
         start_time = time.time()
         result = self.run_command(command)
         end_time = time.time()
@@ -80,7 +75,7 @@ class KubectlClient(object):
         cli_options['kubeconfig'] = self.kube_config_path
         command = 'kubectl {0}{1}'.format(
             cmd, self._cli_options(**cli_options))
-        print("Running kubectl command: {}".format(command))
+        print(f"Running kubectl command: {command}")
         start_time = time.time()
         result = self.run_command_with_stderr(command)
         end_time = time.time()
@@ -89,19 +84,17 @@ class KubectlClient(object):
         return result
 
     def exec_cmd(self, pod, cmd, namespace):
-        result = self.execute_kubectl_cmd(
+        return self.execute_kubectl_cmd(
             'exec {0} --namespace={1} -- {2}'.format(pod, namespace, cmd),
-            json_out=False)
-        return result
+            json_out=False,
+        )
 
     def logs(self, pod='', **cli_options):
         command = 'logs {0}'.format(pod) if pod else "logs"
-        result = self.execute_kubectl(command, **cli_options)
-        return result
+        return self.execute_kubectl(command, **cli_options)
 
     def cp_from_pod(self, pod, namespace, path_in_pod, local_path):
-        command = "cp {}/{}:{} {}".format(
-            namespace, pod, path_in_pod, local_path)
+        command = f"cp {namespace}/{pod}:{path_in_pod} {local_path}"
         return self.execute_kubectl(command)
 
     def list_namespaces(self):
@@ -109,8 +102,7 @@ class KubectlClient(object):
         return [n['metadata']['name'] for n in ns['items']]
 
     def get_nodes(self):
-        nodes = self.get_resource("nodes")
-        return nodes
+        return self.get_resource("nodes")
 
     def create_ns(self, namespace):
         self.create_resource("namespace", namespace)
@@ -122,8 +114,7 @@ class KubectlClient(object):
 
     def run(self, name, **cli_options):
         command = "run {0}".format(name)
-        result = self.execute_kubectl(command, **cli_options)
-        return result
+        return self.execute_kubectl(command, **cli_options)
 
     def create_resourse_from_yml(self, file_yml, namespace=None):
         cmd = "create -f {0}".format(file_yml)
@@ -180,9 +171,10 @@ class KubectlClient(object):
                 if running_pods == number_of_pods:
                     return pods
             if int(time.time()) - start_time > 300:
-                pod_states = {}
-                for p in pods.get('items', []):
-                    pod_states[p['metadata']['name']] = p['status']['phase']
+                pod_states = {
+                    p['metadata']['name']: p['status']['phase']
+                    for p in pods.get('items', [])
+                }
                 raise Exception(
                     'Timeout Exception: pods did not start\n'
                     'Expect number of pods {0} vs number of pods found {1}:\n'
@@ -204,8 +196,7 @@ class KubectlClient(object):
                 time.sleep(15)
                 return pod
             if int(time.time()) - start_time > 300:
-                raise Exception(
-                    'Timeout Exception: pod {} did not start\n'.format(name))
+                raise Exception(f'Timeout Exception: pod {name} did not start\n')
             time.sleep(5)
 
     def apply_conformance_tests(self):

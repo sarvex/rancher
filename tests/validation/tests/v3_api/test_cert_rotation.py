@@ -124,13 +124,14 @@ def test_rotate_kube_ca():
 
 # Gets the certificate expiration date and cert name. Stores them in a dict.
 def get_certs():
-    certs = {}
     client, cluster = get_user_client_and_cluster()
-    for key in cluster.certificatesExpiration:
-        if "kube-etcd" not in key:
-            certs[key] = parse_datetime(cluster.certificatesExpiration[key]
-                                        ["expirationDate"])
-
+    certs = {
+        key: parse_datetime(
+            cluster.certificatesExpiration[key]["expirationDate"]
+        )
+        for key in cluster.certificatesExpiration
+        if "kube-etcd" not in key
+    }
     # Get etcd node certs from node IP
     nodes = get_etcd_nodes(cluster)
     for node in nodes:

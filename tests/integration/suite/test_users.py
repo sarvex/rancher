@@ -28,7 +28,7 @@ def test_globalrolebinding_finalizer_cleanup(admin_mc, remove_resource):
         is performed correctly"""
     client = admin_mc.client
     grb = client.create_globalRoleBinding(
-        globalRoleId="admin", userId="u-" + random_str()
+        globalRoleId="admin", userId=f"u-{random_str()}"
     )
     remove_resource(grb)
     assert grb.annotations[grbAnno] == "true"
@@ -42,9 +42,9 @@ def test_globalrolebinding_finalizer_cleanup(admin_mc, remove_resource):
         "metadata": {
             "finalizers": ["clusterscoped.controller.cattle.io/grb-sync_fake"],
             "generation": 1,
-            "name": "grb-" + random_str(),
+            "name": f"grb-{random_str()}",
         },
-        "userName": "u-" + random_str(),
+        "userName": f"u-{random_str()}",
     }
     grb_k8s = api.create_cluster_custom_object(
         group="management.cattle.io",
@@ -59,10 +59,7 @@ def test_globalrolebinding_finalizer_cleanup(admin_mc, remove_resource):
     def check_annotation():
         grb1 = client.by_id_globalRoleBinding(grb_k8s.id)
         try:
-            if grb1.annotations[grbAnno] == "true":
-                return True
-            else:
-                return False
+            return grb1.annotations[grbAnno] == "true"
         except (AttributeError, KeyError):
             return False
 
@@ -83,7 +80,7 @@ def test_roletemplate_finalizer_cleanup(admin_mc, remove_resource):
     """ This ensures that roletemplates cleanup for clusters < v2.2.8
         is performed correctly"""
     client = admin_mc.client
-    rt = client.create_roleTemplate(name="rt-" + random_str())
+    rt = client.create_roleTemplate(name=f"rt-{random_str()}")
     remove_resource(rt)
     assert rt.annotations[rtAnno] == "true"
 
@@ -94,12 +91,12 @@ def test_roletemplate_finalizer_cleanup(admin_mc, remove_resource):
         "kind": "RoleTemplate",
         "metadata": {
             "finalizers": [
-                "clusterscoped.controller.cattle.io/" +
-                "cluster-roletemplate-sync_fake",
-                "fake-finalizer"
+                "clusterscoped.controller.cattle.io/"
+                + "cluster-roletemplate-sync_fake",
+                "fake-finalizer",
             ],
-            "name": "test-" + random_str(),
-        }
+            "name": f"test-{random_str()}",
+        },
     }
     rt_k8s = api.create_cluster_custom_object(
         group="management.cattle.io",
@@ -114,12 +111,10 @@ def test_roletemplate_finalizer_cleanup(admin_mc, remove_resource):
     def check_annotation():
         rt1 = client.by_id_roleTemplate(rt_k8s.id)
         try:
-            if rt1.annotations[rtAnno] == "true":
-                return True
-            else:
-                return False
+            return rt1.annotations[rtAnno] == "true"
         except (AttributeError, KeyError):
             return False
+
     wait_for(check_annotation, fail_handler=lambda: "annotation was not added")
     rt1 = api.get_cluster_custom_object(
         group="management.cattle.io",

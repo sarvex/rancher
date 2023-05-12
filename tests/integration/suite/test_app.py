@@ -229,9 +229,9 @@ def test_helm_timeout(admin_pc, admin_mc, remove_resource):
     passed to helm.
     """
     client = admin_pc.client
-    ns = admin_pc.cluster.client.create_namespace(name="ns-" + random_str(),
-                                                  projectId=admin_pc.
-                                                  project.id)
+    ns = admin_pc.cluster.client.create_namespace(
+        name=f"ns-{random_str()}", projectId=admin_pc.project.id
+    )
     remove_resource(ns)
 
     wait_for_template_to_be_created(admin_mc.client, "library")
@@ -239,9 +239,9 @@ def test_helm_timeout(admin_pc, admin_mc, remove_resource):
     # timeout of one second is not sufficient for installing mysql and should
     # result in failure
     app1 = client.create_app(
-        name="app-" + random_str(),
+        name=f"app-{random_str()}",
         externalId="catalog://?catalog=library&template=mysql&version=1.3.1&"
-                   "namespace=cattle-global-data",
+        "namespace=cattle-global-data",
         targetNamespace=ns.name,
         projectId=admin_pc.project.id,
         wait=True,
@@ -257,9 +257,7 @@ def test_helm_timeout(admin_pc, admin_mc, remove_resource):
     def wait_for_transition_error(app):
         def transition_error():
             test_app = client.reload(app)
-            if test_app.transitioning != "error":
-                return False
-            return test_app
+            return False if test_app.transitioning != "error" else test_app
 
         return wait_for(transition_error, timeout=15, fail_handler=lambda:
                         "expected transitioning to fail")
@@ -329,36 +327,38 @@ def test_app_create_validation(admin_mc, admin_pc, custom_catalog,
                                                   project.id)
     remove_resource(ns)
 
-    cat_base = "catalog://?catalog="+c_name+"&template=chartmuseum&version="
+    cat_base = f"catalog://?catalog={c_name}&template=chartmuseum&version="
 
     app_data = {
         'name': random_str(),
-        'externalId': cat_base+"2.7.0",
+        'externalId': f"{cat_base}2.7.0",
         'targetNamespace': ns.name,
         'projectId': admin_pc.project.id,
-        "answers": [{
-            "type": "answer",
-            "clusterId": None,
-            "projectId": None,
-            "values": {
-                "defaultImage": "true",
-                "image.repository": "chartmuseum/chartmuseum",
-                "image.tag": "v0.11.0",
-                "env.open.STORAGE": "local",
-                "gcp.secret.enabled": "false",
-                "gcp.secret.key": "credentials.json",
-                "persistence.enabled": "true",
-                "persistence.size": "10Gi",
-                "ingress.enabled": "true",
-                "ingress.hosts[0]": "xip.io",
-                "service.type": "NodePort",
-                "env.open.SHOW_ADVANCED": "false",
-                "env.open.DEPTH": "0",
-                "env.open.ALLOW_OVERWRITE": "false",
-                "env.open.AUTH_ANONYMOUS_GET": "false",
-                "env.open.DISABLE_METRICS": "true"
+        "answers": [
+            {
+                "type": "answer",
+                "clusterId": None,
+                "projectId": None,
+                "values": {
+                    "defaultImage": "true",
+                    "image.repository": "chartmuseum/chartmuseum",
+                    "image.tag": "v0.11.0",
+                    "env.open.STORAGE": "local",
+                    "gcp.secret.enabled": "false",
+                    "gcp.secret.key": "credentials.json",
+                    "persistence.enabled": "true",
+                    "persistence.size": "10Gi",
+                    "ingress.enabled": "true",
+                    "ingress.hosts[0]": "xip.io",
+                    "service.type": "NodePort",
+                    "env.open.SHOW_ADVANCED": "false",
+                    "env.open.DEPTH": "0",
+                    "env.open.ALLOW_OVERWRITE": "false",
+                    "env.open.AUTH_ANONYMOUS_GET": "false",
+                    "env.open.DISABLE_METRICS": "true",
+                },
             }
-        }]
+        ],
     }
 
     set_server_version(client, "2.4.2-beta2")
@@ -405,36 +405,38 @@ def test_app_update_validation(admin_mc, admin_pc, custom_catalog,
                                                   project.id)
     remove_resource(ns)
 
-    cat_base = "catalog://?catalog="+c_name+"&template=chartmuseum&version="
+    cat_base = f"catalog://?catalog={c_name}&template=chartmuseum&version="
 
     app_data = {
         'name': random_str(),
-        'externalId': cat_base+"2.3.1",
+        'externalId': f"{cat_base}2.3.1",
         'targetNamespace': ns.name,
         'projectId': admin_pc.project.id,
-        "answers": [{
-            "type": "answer",
-            "clusterId": None,
-            "projectId": None,
-            "values": {
-                "defaultImage": "true",
-                "image.repository": "chartmuseum/chartmuseum",
-                "image.tag": "v0.9.0",
-                "env.open.STORAGE": "local",
-                "gcp.secret.enabled": "false",
-                "gcp.secret.key": "credentials.json",
-                "persistence.enabled": "true",
-                "persistence.size": "10Gi",
-                "ingress.enabled": "true",
-                "ingress.hosts[0]": "xip.io",
-                "service.type": "NodePort",
-                "env.open.SHOW_ADVANCED": "false",
-                "env.open.DEPTH": "0",
-                "env.open.ALLOW_OVERWRITE": "false",
-                "env.open.AUTH_ANONYMOUS_GET": "false",
-                "env.open.DISABLE_METRICS": "true"
+        "answers": [
+            {
+                "type": "answer",
+                "clusterId": None,
+                "projectId": None,
+                "values": {
+                    "defaultImage": "true",
+                    "image.repository": "chartmuseum/chartmuseum",
+                    "image.tag": "v0.9.0",
+                    "env.open.STORAGE": "local",
+                    "gcp.secret.enabled": "false",
+                    "gcp.secret.key": "credentials.json",
+                    "persistence.enabled": "true",
+                    "persistence.size": "10Gi",
+                    "ingress.enabled": "true",
+                    "ingress.hosts[0]": "xip.io",
+                    "service.type": "NodePort",
+                    "env.open.SHOW_ADVANCED": "false",
+                    "env.open.DEPTH": "0",
+                    "env.open.ALLOW_OVERWRITE": "false",
+                    "env.open.AUTH_ANONYMOUS_GET": "false",
+                    "env.open.DISABLE_METRICS": "true",
+                },
             }
-        }]
+        ],
     }
 
     set_server_version(client, "2.4.2-rc3")
@@ -448,7 +450,7 @@ def test_app_update_validation(admin_mc, admin_pc, custom_catalog,
         'obj': app1,
         'action_name': 'upgrade',
         'answers': app_data['answers'],
-        'externalId': cat_base+"2.7.0",
+        'externalId': f"{cat_base}2.7.0",
         'forceUpgrade': False,
     }
 
@@ -486,36 +488,38 @@ def test_app_rollback_validation(admin_mc, admin_pc, custom_catalog,
                                                   project.id)
     remove_resource(ns)
 
-    cat_base = "catalog://?catalog="+c_name+"&template=chartmuseum&version="
+    cat_base = f"catalog://?catalog={c_name}&template=chartmuseum&version="
 
     app_data = {
         'name': random_str(),
-        'externalId': cat_base+"2.3.1",
+        'externalId': f"{cat_base}2.3.1",
         'targetNamespace': ns.name,
         'projectId': admin_pc.project.id,
-        "answers": [{
-            "type": "answer",
-            "clusterId": None,
-            "projectId": None,
-            "values": {
-                "defaultImage": "true",
-                "image.repository": "chartmuseum/chartmuseum",
-                "image.tag": "v0.9.0",
-                "env.open.STORAGE": "local",
-                "gcp.secret.enabled": "false",
-                "gcp.secret.key": "credentials.json",
-                "persistence.enabled": "true",
-                "persistence.size": "10Gi",
-                "ingress.enabled": "true",
-                "ingress.hosts[0]": "xip.io",
-                "service.type": "NodePort",
-                "env.open.SHOW_ADVANCED": "false",
-                "env.open.DEPTH": "0",
-                "env.open.ALLOW_OVERWRITE": "false",
-                "env.open.AUTH_ANONYMOUS_GET": "false",
-                "env.open.DISABLE_METRICS": "true"
+        "answers": [
+            {
+                "type": "answer",
+                "clusterId": None,
+                "projectId": None,
+                "values": {
+                    "defaultImage": "true",
+                    "image.repository": "chartmuseum/chartmuseum",
+                    "image.tag": "v0.9.0",
+                    "env.open.STORAGE": "local",
+                    "gcp.secret.enabled": "false",
+                    "gcp.secret.key": "credentials.json",
+                    "persistence.enabled": "true",
+                    "persistence.size": "10Gi",
+                    "ingress.enabled": "true",
+                    "ingress.hosts[0]": "xip.io",
+                    "service.type": "NodePort",
+                    "env.open.SHOW_ADVANCED": "false",
+                    "env.open.DEPTH": "0",
+                    "env.open.ALLOW_OVERWRITE": "false",
+                    "env.open.AUTH_ANONYMOUS_GET": "false",
+                    "env.open.DISABLE_METRICS": "true",
+                },
             }
-        }]
+        ],
     }
 
     set_server_version(client, "2.5.0")
@@ -541,7 +545,7 @@ def test_app_rollback_validation(admin_mc, admin_pc, custom_catalog,
         'obj': app1,
         'action_name': 'upgrade',
         'answers': app_data['answers'],
-        'externalId': cat_base+"2.7.0",
+        'externalId': f"{cat_base}2.7.0",
         'forceUpgrade': False,
     }
 
@@ -624,16 +628,20 @@ def test_app_has_helmversion(admin_pc, admin_mc, remove_resource):
     remove_resource(ns2)
     app1 = app_client.create_app(
         name=app_name1,
-        externalId="catalog://?catalog="+catalog_name1+"&template=chartmuseum&"
-        "version=2.7.0&namespace=cattle-global-data",
+        externalId=(
+            f"catalog://?catalog={catalog_name1}" + "&template=chartmuseum&"
+            "version=2.7.0&namespace=cattle-global-data"
+        ),
         targetNamespace=ns1.name,
         projectId=admin_pc.project.id,
     )
     remove_resource(app1)
     app2 = app_client.create_app(
         name=app_name2,
-        externalId="catalog://?catalog="+catalog_name2+"&template=chartmuseum&"
-        "version=2.7.0&namespace=cattle-global-data",
+        externalId=(
+            f"catalog://?catalog={catalog_name2}" + "&template=chartmuseum&"
+            "version=2.7.0&namespace=cattle-global-data"
+        ),
         targetNamespace=ns2.name,
         projectId=admin_pc.project.id,
     )
@@ -657,8 +665,9 @@ def test_app_upgrade_has_helmversion(admin_pc, admin_mc, remove_resource):
     app1_name = random_str()
     app2_name = random_str()
     helm_3 = 'helm_v3'
-    cat_base = "catalog://?catalog=" + catalog_name + \
-               "&template=rancher-v3-issue&version="
+    cat_base = (
+        f"catalog://?catalog={catalog_name}&template=rancher-v3-issue&version="
+    )
 
     helm3_catalog = catalog_client.create_catalog(
         name=catalog_name,
@@ -678,12 +687,13 @@ def test_app_upgrade_has_helmversion(admin_pc, admin_mc, remove_resource):
     assert templates[1].status.helmVersion == helm_3
     # check helm version at templateVersion level
     templateVersion = catalog_client.list_templateVersion(
-        name=catalog_name+"-rancher-v3-issue-0.1.0")
+        name=f"{catalog_name}-rancher-v3-issue-0.1.0"
+    )
     assert templateVersion.data[0].status.helmVersion == helm_3
     # creating app with existing chart version in catalog
     app1 = app_client.create_app(
         name=app1_name,
-        externalId=cat_base+"0.1.0&namespace="+ns.name,
+        externalId=f"{cat_base}0.1.0&namespace={ns.name}",
         targetNamespace=ns.name,
         projectId=admin_pc.project.id,
     )
@@ -707,9 +717,8 @@ def test_app_upgrade_has_helmversion(admin_pc, admin_mc, remove_resource):
         catalog = catalog_client.reload(catalog)
         templates = catalog_client.list_template(catalogId=catalog.id).data
         templatesString = ','.join([str(i) for i in templates])
-        if "0.1.1" in templatesString:
-            return catalog
-        return None
+        return catalog if "0.1.1" in templatesString else None
+
     helm3_catalog = wait_for(
         lambda: ensure_updated_catalog(helm3_catalog),
         fail_handler=lambda:
@@ -717,14 +726,15 @@ def test_app_upgrade_has_helmversion(admin_pc, admin_mc, remove_resource):
     templates = catalog_client.list_template(catalogId=helm3_catalog.id).data
     assert templates[1].status.helmVersion == helm_3
     templateVersion = catalog_client.list_templateVersion(
-        name=catalog_name+"-rancher-v3-issue-0.1.1")
+        name=f"{catalog_name}-rancher-v3-issue-0.1.1"
+    )
     assert templateVersion.data[0].status.helmVersion == helm_3
     project_client = user_project_client(admin_pc, admin_pc.project)
     # update existing app with new version to ensure correct
     # helm version is listed
     app_data = {
         'name': app1_name,
-        'externalId': cat_base+"0.1.1",
+        'externalId': f"{cat_base}0.1.1",
         'targetNamespace': ns.name,
         'projectId': admin_pc.project.id,
     }
@@ -736,7 +746,7 @@ def test_app_upgrade_has_helmversion(admin_pc, admin_mc, remove_resource):
     # create a new app with new version to ensure helm version is listed
     app2 = app_client.create_app(
         name=app2_name,
-        externalId=cat_base+"0.1.1&namespace="+ns.name,
+        externalId=f"{cat_base}0.1.1&namespace={ns.name}",
         targetNamespace=ns.name,
         projectId=admin_pc.project.id,
     )
@@ -771,9 +781,11 @@ def test_app_externalid_target_project_verification(admin_mc,
                                   )
     wait_until(lambda: len(client.list_template(projectCatalogId=name)) > 0)
 
-    external_id = "catalog://?catalog=" + project_name + "/" + name + \
-                  "&type=projectCatalog&template=chartmuseum" \
-                  "&version=2.7.0"
+    external_id = (
+        f"catalog://?catalog={project_name}/{name}"
+        + "&type=projectCatalog&template=chartmuseum"
+        "&version=2.7.0"
+    )
 
     ns = admin_pc.cluster.client.create_namespace(name=random_str(),
                                                   projectId=admin_pc.
@@ -919,11 +931,7 @@ def wait_for_app_to_be_deleted(client, app, timeout=120):
             raise AssertionError(
                 "Timed out waiting for apps to be deleted")
         apps = client.list_app()
-        found = False
-        for a in apps:
-            if a.id == app.id:
-                found = True
-                break
+        found = any(a.id == app.id for a in apps)
         if not found:
             break
         time.sleep(interval)
@@ -944,11 +952,7 @@ def wait_for_monitor_metric(admin_cc, admin_mc, timeout=60):
         interval *= 2
         monitorMetrics = client.list_monitor_metric(namespaceId=admin_cc.
                                                     cluster.id)
-    found = False
-    for m in monitorMetrics:
-        if m.labels.component == "istio":
-            found = True
-            break
+    found = any(m.labels.component == "istio" for m in monitorMetrics)
     if not found:
         raise AssertionError(
             "not found istio expression")

@@ -33,7 +33,7 @@ WORDPRESS_EXTID = create_catalog_external_id(CATALOG_NAME,
 
 def cluster_and_client(cluster_id, mgmt_client):
     cluster = mgmt_client.by_id_cluster(cluster_id)
-    url = cluster.links.self + '/schemas'
+    url = f'{cluster.links.self}/schemas'
     client = rancher.Client(url=url,
                             verify=False,
                             token=mgmt_client.token)
@@ -80,16 +80,12 @@ def test_tiller():
     assert len(clusters) > 0
     cluster_id = clusters[0].id
 
-    p = admin_client. \
-        create_project(name="test-" + random_str(),
-                       clusterId=cluster_id,
-                       resourceQuota={
-                           "limit": {
-                               "secrets": "1"}},
-                       namespaceDefaultResourceQuota={
-                           "limit": {
-                               "secrets": "1"}}
-                       )
+    p = admin_client.create_project(
+        name=f"test-{random_str()}",
+        clusterId=cluster_id,
+        resourceQuota={"limit": {"secrets": "1"}},
+        namespaceDefaultResourceQuota={"limit": {"secrets": "1"}},
+    )
 
     p = admin_client.reload(p)
     proj_client = rancher.Client(url=p.links.self +
@@ -689,7 +685,6 @@ def validate_catalog_app_deploy(proj_client_user, namespace,
                                                   catalog_ext_id),
                                           targetNamespace=namespace,
                                           projectId=projectid)
-        pass
     except:
         assert False, "User is not able to deploy app from catalog"
     validate_catalog_app(proj_client_user, app, catalog_ext_id)
@@ -699,7 +694,6 @@ def validate_catalog_app_deploy(proj_client_user, namespace,
 def validate_catalog_deletion(catalog,
                               user, candelete=True, clustercatalog=True):
     user_client = get_client_for_token(user_token[user]["token"])
-    catalog_name = catalog.name
     if not candelete:
         with pytest.raises(ApiError) as e:
             user_client.delete(catalog)
@@ -707,6 +701,7 @@ def validate_catalog_deletion(catalog,
         assert e.value.error.code == 'Forbidden'
     else:
         user_client.delete(catalog)
+        catalog_name = catalog.name
         if clustercatalog:
             catalogs_list = user_client.list_clusterCatalog(name=catalog_name)
         else:
@@ -731,7 +726,6 @@ def create_project_catalog():
                                        pId,
                                        "project")
         added_catalog = catalogs_list["data"][0]
-        catalog_external_id = catalog_proj_scoped_ext_id
     else:
         catalog = user_client.create_projectCatalog(
             name=PROJECT_CATALOG,
@@ -764,8 +758,7 @@ def create_project_catalog():
         validate_catalog_app(proj_client, app, catalog_proj_scoped_ext_id)
         proj_client.delete(app)
         added_catalog = catalog
-        catalog_external_id = catalog_proj_scoped_ext_id
-
+    catalog_external_id = catalog_proj_scoped_ext_id
     return added_catalog, catalog_external_id
 
 
@@ -786,7 +779,6 @@ def create_cluster_catalog():
                                        pId,
                                        "cluster")
         added_catalog = catalogs_list["data"][0]
-        catalog_external_id = catalog_cluster_scoped_ext_id
     else:
         proj_client = get_project_client_for_token(
             project_detail["cluster1"]["project1"],
@@ -819,6 +811,5 @@ def create_cluster_catalog():
         validate_catalog_app(proj_client, app, catalog_cluster_scoped_ext_id)
         proj_client.delete(app)
         added_catalog = catalog
-        catalog_external_id = catalog_cluster_scoped_ext_id
-
+    catalog_external_id = catalog_cluster_scoped_ext_id
     return added_catalog, catalog_external_id

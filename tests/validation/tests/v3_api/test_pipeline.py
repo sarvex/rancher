@@ -75,33 +75,39 @@ def check_last_run_state(status):
 
         if resource.lastRunState == status:
             return True
-        if resource.lastRunState == "Failed":
-            return False
-        return False
+        return False if resource.lastRunState == "Failed" else False
+
     return _find_condition
 
 
 def create_example_pipeline():
     return pipeline_details["p_client"].create_pipeline(
-        name="test-" + random_str(),
+        name=f"test-{random_str()}",
         repositoryUrl=PIPELINE_REPO_URL,
         triggerWebhookPr=False,
         triggerWebhookPush=False,
-        triggerWebhookTag=False)
+        triggerWebhookTag=False,
+    )
 
 
 def pipeline_view_logs():
-    url_base = 'wss://' + CATTLE_TEST_URL[7:] + \
-               '/v3/projects/' + pipeline_details["project"].id + \
-               '/pipelineExecutions/' + pipeline_details["pipeline_run"].id + \
-               '/log?'
+    url_base = (
+        (
+            (
+                f'wss://{CATTLE_TEST_URL[7:]}/v3/projects/'
+                + pipeline_details["project"].id
+            )
+            + '/pipelineExecutions/'
+        )
+        + pipeline_details["pipeline_run"].id
+    ) + '/log?'
     params_dict = {
         "stage": 1,
         "step": 0
     }
     params = urllib.parse.urlencode(params_dict, doseq=True,
                                     quote_via=urllib.parse.quote, safe='()')
-    url = url_base + "&" + params
+    url = f"{url_base}&{params}"
     ws = create_connection(url, None)
     logparse = WebsocketLogParse()
     logparse.start_thread(target=logparse.receiver, args=(ws, False, False))

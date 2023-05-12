@@ -194,8 +194,12 @@ def test_create_cluster_template_with_members(admin_mc, remove_resource,
     remove_resource(user_member)
     user_not_member = user_factory()
     remove_resource(user_not_member)
-    members = [{"userPrincipalId": "local://" + user_member.user.id,
-                "accessType": "read-only"}]
+    members = [
+        {
+            "userPrincipalId": f"local://{user_member.user.id}",
+            "accessType": "read-only",
+        }
+    ]
     cluster_template = create_cluster_template(admin_mc, members, admin_mc)
     remove_resource(cluster_template)
     time.sleep(30)
@@ -207,7 +211,7 @@ def test_create_cluster_template_with_members(admin_mc, remove_resource,
     rbac = kubernetes.client.RbacAuthorizationV1Api(admin_mc.k8s_client)
     split = cluster_template.id.split(":")
     name = split[1]
-    rb_name = name + "-ct-r"
+    rb_name = f"{name}-ct-r"
     wait_for(lambda: check_subject_in_rb(rbac, 'cattle-global-data',
                                          user_member.user.id, rb_name),
              timeout=60,
@@ -224,14 +228,18 @@ def test_create_cluster_template_with_members(admin_mc, remove_resource,
         assert e.error.status == 403
 
     # add * as member to share with all
-    new_members = [{"userPrincipalId": "local://" + user_member.user.id,
-                    "accessType": "read-only"}, {"groupPrincipalId": "*",
-                                                 "accessType": "read-only"}]
+    new_members = [
+        {
+            "userPrincipalId": f"local://{user_member.user.id}",
+            "accessType": "read-only",
+        },
+        {"groupPrincipalId": "*", "accessType": "read-only"},
+    ]
     client.update(ct, members=new_members)
 
     split = cluster_template.id.split(":")
     name = split[1]
-    rb_name = name + "-ct-r"
+    rb_name = f"{name}-ct-r"
     wait_for(lambda: check_subject_in_rb(rbac, 'cattle-global-data',
                                          'system:authenticated', rb_name),
              timeout=60,
@@ -313,21 +321,27 @@ def test_revision_creation_permission(admin_mc, remove_resource,
                                       user_factory):
     user_readonly = user_factory()
     user_owner = user_factory()
-    members = [{"userPrincipalId": "local://" + user_readonly.user.id,
-                "accessType": "read-only"},
-               {"userPrincipalId": "local://" + user_owner.user.id,
-                "accessType": "owner"}]
+    members = [
+        {
+            "userPrincipalId": f"local://{user_readonly.user.id}",
+            "accessType": "read-only",
+        },
+        {
+            "userPrincipalId": f"local://{user_owner.user.id}",
+            "accessType": "owner",
+        },
+    ]
     cluster_template = create_cluster_template(admin_mc, members, admin_mc)
     remove_resource(cluster_template)
     rbac = kubernetes.client.RbacAuthorizationV1Api(admin_mc.k8s_client)
     split = cluster_template.id.split(":")
     name = split[1]
-    rb_name = name + "-ct-r"
+    rb_name = f"{name}-ct-r"
     wait_for(lambda: check_subject_in_rb(rbac, 'cattle-global-data',
                                          user_readonly.user.id, rb_name),
              timeout=60,
              fail_handler=fail_handler(rb_resource))
-    rb_name = name + "-ct-a"
+    rb_name = f"{name}-ct-a"
     wait_for(lambda: check_subject_in_rb(rbac, 'cattle-global-data',
                                          user_owner.user.id, rb_name),
              timeout=60,
@@ -356,15 +370,19 @@ def test_updated_members_revision_access(admin_mc, remove_resource,
 
     # update template to add a user as member
     user_member = user_factory()
-    members = [{"userPrincipalId": "local://" + user_member.user.id,
-                "accessType": "read-only"}]
+    members = [
+        {
+            "userPrincipalId": f"local://{user_member.user.id}",
+            "accessType": "read-only",
+        }
+    ]
     admin_mc.client.update(cluster_template, members=members)
 
     # this member should get access to existing revision "rev"
     rbac = kubernetes.client.RbacAuthorizationV1Api(admin_mc.k8s_client)
     split = rev.id.split(":")
     name = split[1]
-    rb_name = name + "-ctr-r"
+    rb_name = f"{name}-ctr-r"
     wait_for(lambda: check_subject_in_rb(rbac, 'cattle-global-data',
                                          user_member.user.id, rb_name),
              timeout=120,
@@ -386,8 +404,12 @@ def test_permissions_removed_on_downgrading_access(admin_mc, remove_resource,
                                                    user_factory):
     user_owner = user_factory()
     remove_resource(user_owner)
-    members = [{"userPrincipalId": "local://" + user_owner.user.id,
-                "accessType": "owner"}]
+    members = [
+        {
+            "userPrincipalId": f"local://{user_owner.user.id}",
+            "accessType": "owner",
+        }
+    ]
     # create cluster template with one member having "member" accessType
     cluster_template = create_cluster_template(admin_mc, members, admin_mc)
     remove_resource(cluster_template)
@@ -395,7 +417,7 @@ def test_permissions_removed_on_downgrading_access(admin_mc, remove_resource,
     rbac = kubernetes.client.RbacAuthorizationV1Api(admin_mc.k8s_client)
     split = cluster_template.id.split(":")
     name = split[1]
-    rb_name = name + "-ct-a"
+    rb_name = f"{name}-ct-a"
     wait_for(lambda: check_subject_in_rb(rbac, 'cattle-global-data',
                                          user_owner.user.id, rb_name),
              timeout=60,
@@ -405,19 +427,31 @@ def test_permissions_removed_on_downgrading_access(admin_mc, remove_resource,
     # so adding new member by the user_member should be allowed
     new_member = user_factory()
     remove_resource(new_member)
-    members = [{"userPrincipalId": "local://" + user_owner.user.id,
-                "accessType": "owner"},
-               {"userPrincipalId": "local://" + new_member.user.id,
-                "accessType": "read-only"}]
+    members = [
+        {
+            "userPrincipalId": f"local://{user_owner.user.id}",
+            "accessType": "owner",
+        },
+        {
+            "userPrincipalId": f"local://{new_member.user.id}",
+            "accessType": "read-only",
+        },
+    ]
     user_owner.client.update(cluster_template, members=members)
 
     # now change user_owner's accessType to read-only
-    members = [{"userPrincipalId": "local://" + user_owner.user.id,
-                "accessType": "read-only"},
-               {"userPrincipalId": "local://" + new_member.user.id,
-                "accessType": "read-only"}]
+    members = [
+        {
+            "userPrincipalId": f"local://{user_owner.user.id}",
+            "accessType": "read-only",
+        },
+        {
+            "userPrincipalId": f"local://{new_member.user.id}",
+            "accessType": "read-only",
+        },
+    ]
     admin_mc.client.update(cluster_template, members=members)
-    rb_name = name + "-ct-r"
+    rb_name = f"{name}-ct-r"
     wait_for(lambda: check_subject_in_rb(rbac, 'cattle-global-data',
                                          user_owner.user.id, rb_name),
              timeout=60,
@@ -425,8 +459,12 @@ def test_permissions_removed_on_downgrading_access(admin_mc, remove_resource,
 
     # user_owner should not be allowed to update cluster template now
     # test updating members field by removing new_member
-    members = [{"userPrincipalId": "local://" + user_owner.user.id,
-                "accessType": "read-only"}]
+    members = [
+        {
+            "userPrincipalId": f"local://{user_owner.user.id}",
+            "accessType": "read-only",
+        }
+    ]
     try:
         user_owner.client.update(cluster_template, members=members)
     except ApiError as e:
@@ -569,10 +607,16 @@ def test_member_accesstype_check(admin_mc, user_factory, remove_resource):
     client = admin_mc.client
     user_readonly = user_factory()
     user_owner = user_factory()
-    members = [{"userPrincipalId": "local://" + user_readonly.user.id,
-                "accessType": "read-only"},
-               {"userPrincipalId": "local://" + user_owner.user.id,
-                "accessType": "member"}]
+    members = [
+        {
+            "userPrincipalId": f"local://{user_readonly.user.id}",
+            "accessType": "read-only",
+        },
+        {
+            "userPrincipalId": f"local://{user_owner.user.id}",
+            "accessType": "member",
+        },
+    ]
     # creation with a member with accessType "member" shouldn't be allowed
     try:
         cluster_template = create_cluster_template(admin_mc, members, admin_mc)
@@ -580,18 +624,29 @@ def test_member_accesstype_check(admin_mc, user_factory, remove_resource):
     except ApiError as e:
         assert e.error.status == 422
 
-    members = [{"userPrincipalId": "local://" + user_readonly.user.id,
-                "accessType": "read-only"},
-               {"userPrincipalId": "local://" + user_owner.user.id,
-                "accessType": "owner"}]
+    members = [
+        {
+            "userPrincipalId": f"local://{user_readonly.user.id}",
+            "accessType": "read-only",
+        },
+        {
+            "userPrincipalId": f"local://{user_owner.user.id}",
+            "accessType": "owner",
+        },
+    ]
     cluster_template = create_cluster_template(admin_mc, members, admin_mc)
     remove_resource(cluster_template)
 
-    updated_members = \
-        [{"userPrincipalId": "local://" + user_readonly.user.id,
-         "accessType": "read-only"},
-         {"userPrincipalId": "local://" + user_owner.user.id,
-         "accessType": "member"}]
+    updated_members = [
+        {
+            "userPrincipalId": f"local://{user_readonly.user.id}",
+            "accessType": "read-only",
+        },
+        {
+            "userPrincipalId": f"local://{user_owner.user.id}",
+            "accessType": "member",
+        },
+    ]
     # updating a cluster template to add user with access type "member"
     # shouldn't be allowed
     try:
@@ -683,8 +738,12 @@ def test_disable_template_revision(admin_mc, list_remove_resource):
 def test_template_delete_by_members(admin_mc, remove_resource,
                                     list_remove_resource, user_factory):
     user_owner = user_factory()
-    members = [{"userPrincipalId": "local://" + user_owner.user.id,
-                "accessType": "owner"}]
+    members = [
+        {
+            "userPrincipalId": f"local://{user_owner.user.id}",
+            "accessType": "owner",
+        }
+    ]
     cluster_template = create_cluster_template(admin_mc, members, admin_mc)
     remove_list = [cluster_template]
     list_remove_resource(remove_list)
@@ -692,7 +751,7 @@ def test_template_delete_by_members(admin_mc, remove_resource,
     rbac = kubernetes.client.RbacAuthorizationV1Api(admin_mc.k8s_client)
     split = cluster_template.id.split(":")
     name = split[1]
-    rb_name = name + "-ct-a"
+    rb_name = f"{name}-ct-a"
     wait_for(lambda: check_subject_in_rb(rbac, 'cattle-global-data',
                                          user_owner.user.id, rb_name),
              timeout=60,
@@ -930,43 +989,32 @@ def create_cluster_template_revision(client, clusterTemplateId):
 
     revision_name = random_str()
 
-    cluster_template_revision = \
-        client.create_cluster_template_revision(
-                                        name=revision_name,
-                                        clusterConfig=cluster_config,
-                                        clusterTemplateId=clusterTemplateId,
-                                        disabled="false",
-                                        questions=questions
-                                        )
-
-    return cluster_template_revision
+    return client.create_cluster_template_revision(
+        name=revision_name,
+        clusterConfig=cluster_config,
+        clusterTemplateId=clusterTemplateId,
+        disabled="false",
+        questions=questions,
+    )
 
 
 def getRKEConfig():
-    rke_config = {
+    return {
         "addonJobTimeout": 30,
         "ignoreDockerVersion": "true",
         "sshAgentAuth": "false",
         "type": "rancherKubernetesEngineConfig",
         "kubernetesVersion": "1.15.x",
-        "authentication": {
-            "strategy": "x509",
-            "type": "authnConfig"
-        },
+        "authentication": {"strategy": "x509", "type": "authnConfig"},
         "network": {
             "plugin": "canal",
             "type": "networkConfig",
-            "options": {
-                "flannel_backend_type": "vxlan"
-            }
+            "options": {"flannel_backend_type": "vxlan"},
         },
-        "ingress": {
-            "provider": "nginx",
-            "type": "ingressConfig"
-        },
+        "ingress": {"provider": "nginx", "type": "ingressConfig"},
         "monitoring": {
             "provider": "metrics-server",
-            "type": "monitoringConfig"
+            "type": "monitoringConfig",
         },
         "services": {
             "type": "rkeConfigServices",
@@ -974,13 +1022,13 @@ def getRKEConfig():
                 "alwaysPullImages": "false",
                 "podSecurityPolicy": "false",
                 "serviceNodePortRange": "30000-32767",
-                "type": "kubeAPIService"
+                "type": "kubeAPIService",
             },
             "etcd": {
                 "creation": "12h",
                 "extraArgs": {
                     "heartbeat-interval": 500,
-                    "election-timeout": 5000
+                    "election-timeout": 5000,
                 },
                 "retention": "72h",
                 "snapshot": "false",
@@ -989,12 +1037,11 @@ def getRKEConfig():
                     "enabled": "true",
                     "intervalHours": 12,
                     "retention": 6,
-                    "type": "backupConfig"
-                }
-            }
-        }
+                    "type": "backupConfig",
+                },
+            },
+        },
     }
-    return rke_config
 
 
 def wait_for_cluster_to_be_deleted(client, clusterId, timeout=45):
@@ -1027,7 +1074,7 @@ def wait_for_default_revision(client, templateId, revisionId, timeout=60):
 
 
 def fail_handler(resource):
-    return "failed waiting for clustertemplate" + resource + " to get updated"
+    return f"failed waiting for clustertemplate{resource} to get updated"
 
 
 def wait_for_cluster_create(client, **kwargs):

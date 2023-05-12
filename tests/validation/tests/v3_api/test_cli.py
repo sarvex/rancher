@@ -84,8 +84,7 @@ def test_cli_namespace_create(remove_cli_resource, rancher_cli: RancherCli):
     namespace = rancher_cli.projects.create_namespace()
     remove_cli_resource("namespace", namespace)
     assert len(rancher_cli.projects.get_namespaces()) == 1
-    assert "{}|active".format(
-        namespace) in rancher_cli.projects.get_namespaces()
+    assert f"{namespace}|active" in rancher_cli.projects.get_namespaces()
 
 
 def test_cli_namespace_move(remove_cli_resource, rancher_cli: RancherCli):
@@ -102,8 +101,7 @@ def test_cli_namespace_move(remove_cli_resource, rancher_cli: RancherCli):
     assert len(rancher_cli.projects.get_namespaces()) == 0
     rancher_cli.projects.switch_context(p2["id"])
     assert len(rancher_cli.projects.get_namespaces()) == 1
-    assert "{}|active".format(
-        namespace) in rancher_cli.projects.get_namespaces()
+    assert f"{namespace}|active" in rancher_cli.projects.get_namespaces()
 
 
 def test_cli_namespace_delete(remove_cli_resource, rancher_cli: RancherCli):
@@ -113,8 +111,7 @@ def test_cli_namespace_delete(remove_cli_resource, rancher_cli: RancherCli):
     namespace = rancher_cli.projects.create_namespace()
     remove_cli_resource("namespace", namespace)
     assert len(rancher_cli.projects.get_namespaces()) == 1
-    assert "{}|active".format(
-        namespace) in rancher_cli.projects.get_namespaces()
+    assert f"{namespace}|active" in rancher_cli.projects.get_namespaces()
     deleted = rancher_cli.projects.delete_namespace(namespace)
     assert deleted
 
@@ -132,8 +129,12 @@ def test_cli_app_install(remove_cli_resource, rancher_cli: RancherCli):
 def test_cli_app_values_install(remove_cli_resource, rancher_cli: RancherCli):
     rancher_cli.log.info("Testing Upgrading Apps")
     initial_app = rancher_cli.apps.install(
-        CHARTMUSEUM_CHART, random_str(), version=CHARTMUSEUM_CHART_VERSION, 
-        timeout=APP_TIMEOUT, values=DATA_SUBDIR + "/appvalues.yaml")
+        CHARTMUSEUM_CHART,
+        random_str(),
+        version=CHARTMUSEUM_CHART_VERSION,
+        timeout=APP_TIMEOUT,
+        values=f"{DATA_SUBDIR}/appvalues.yaml",
+    )
     remove_cli_resource("apps", initial_app["id"])
     assert initial_app["state"] == "active"
     assert initial_app["version"] == CHARTMUSEUM_CHART_VERSION
@@ -356,8 +357,9 @@ def test_ps(custom_workload, rancher_cli: RancherCli):
     # correct namespace with the correct name
     rancher_cli.switch_context(rancher_cli.DEFAULT_CONTEXT)
     ps = rancher_cli.ps()
-    expected_value = "{}|{}|nginx|2".format(
-        rancher_cli.default_namespace, custom_workload.name)
+    expected_value = (
+        f"{rancher_cli.default_namespace}|{custom_workload.name}|nginx|2"
+    )
     assert expected_value in ps.splitlines()
 
 
@@ -365,8 +367,9 @@ def test_kubectl(custom_workload, rancher_cli: RancherCli):
     rancher_cli.log.info("Testing kubectl commands from the CLI")
     rancher_cli.switch_context(rancher_cli.DEFAULT_CONTEXT)
     jsonpath = "-o jsonpath='{.spec.template.spec.containers[0].image}'"
-    result = rancher_cli.kubectl("get deploy -n {} {} {}".format(
-        rancher_cli.default_namespace, custom_workload.name, jsonpath))
+    result = rancher_cli.kubectl(
+        f"get deploy -n {rancher_cli.default_namespace} {custom_workload.name} {jsonpath}"
+    )
     assert result == "nginx"
 
 
@@ -377,17 +380,15 @@ def test_ssh(rancher_cli: RancherCli):
     failures = []
     rancher_cli.switch_context(rancher_cli.DEFAULT_CONTEXT)
     nodes = rancher_cli.nodes.get()
-    rancher_cli.log.debug("Nodes is: {}".format(nodes))
+    rancher_cli.log.debug(f"Nodes is: {nodes}")
 
-    is_jenkins = False
-    if os.environ.get("RANCHER_IS_JENKINS", None):
-        is_jenkins = True
+    is_jenkins = bool(os.environ.get("RANCHER_IS_JENKINS", None))
     for node in nodes:
         ip = rancher_cli.nodes.ssh(node, "curl -s ifconfig.me",
                                    known=KNOWN_HOST, is_jenkins=is_jenkins)
         if node["ip"] != ip:
             failures.append(node["ip"])
-    assert failures == []
+    assert not failures
 
 
 @pytest.fixture(scope='module')
@@ -396,15 +397,17 @@ def custom_workload(rancher_cli):
     project = client.list_project(name=rancher_cli.default_project["name"],
                                   clusterId=cluster.id).data[0]
     p_client = get_project_client_for_token(project, USER_TOKEN)
-    workload = p_client.create_workload(
+    return p_client.create_workload(
         name=random_str(),
         namespaceId=rancher_cli.default_namespace,
         scale=2,
-        containers=[{
-            'name': 'one',
-            'image': 'nginx',
-        }])
-    return workload
+        containers=[
+            {
+                'name': 'one',
+                'image': 'nginx',
+            }
+        ],
+    )
 
 
 @pytest.fixture(scope='module')

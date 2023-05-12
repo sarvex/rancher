@@ -13,32 +13,32 @@ def test_boto_create_eks():
     cluster_name = evaluate_clustername()
     AmazonWebServices().create_eks_cluster(cluster_name)
     kc_path = get_eks_kubeconfig(cluster_name)
-    out = run_command_with_stderr(
-            'kubectl --kubeconfig {} get svc'.format(kc_path))
+    out = run_command_with_stderr(f'kubectl --kubeconfig {kc_path} get svc')
     print(out)
-    out = run_command_with_stderr(
-            'kubectl --kubeconfig {} get nodes'.format(kc_path))
+    out = run_command_with_stderr(f'kubectl --kubeconfig {kc_path} get nodes')
     print(out)
 
 
 def get_eks_kubeconfig(cluster_name):
-    kubeconfig_path = DATA_SUBDIR + "/kube_config_hosted_eks.yml"
+    kubeconfig_path = f"{DATA_SUBDIR}/kube_config_hosted_eks.yml"
 
-    exports = 'export AWS_ACCESS_KEY_ID={} && ' + \
-        'export AWS_SECRET_ACCESS_KEY={}'.format(
-            EKS_ACCESS_KEY, EKS_SECRET_KEY)
+    exports = (
+        'export AWS_ACCESS_KEY_ID={} && '
+        + f'export AWS_SECRET_ACCESS_KEY={EKS_ACCESS_KEY}'
+    )
 
     # log_out=False so we don't write the keys to the console
     run_command_with_stderr(exports, log_out=False)
 
-    command = 'aws eks --region {} update-kubeconfig '.format(EKS_REGION) + \
-        '--name {} --kubeconfig {}'.format(cluster_name, kubeconfig_path)
+    command = (
+        f'aws eks --region {EKS_REGION} update-kubeconfig '
+        + f'--name {cluster_name} --kubeconfig {kubeconfig_path}'
+    )
     run_command_with_stderr(command)
 
     print("\n\nKubeconfig:")
-    kubeconfig_file = open(kubeconfig_path, "r")
-    kubeconfig_contents = kubeconfig_file.read()
-    kubeconfig_file.close()
+    with open(kubeconfig_path, "r") as kubeconfig_file:
+        kubeconfig_contents = kubeconfig_file.read()
     kubeconfig_contents_encoded = base64.b64encode(
         kubeconfig_contents.encode("utf-8")).decode("utf-8")
     print("\n\n" + kubeconfig_contents + "\n\n")

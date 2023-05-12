@@ -11,17 +11,18 @@ def test_cannot_target_users_and_group(admin_mc, remove_resource):
     admin_client = admin_mc.client
 
     project = admin_client.create_project(
-        name="p-" + random_str(),
-        clusterId="local")
+        name=f"p-{random_str()}", clusterId="local"
+    )
     remove_resource(project)
 
     with pytest.raises(ApiError) as e:
         prtb = admin_client.create_project_role_template_binding(
-            name="prtb-"+random_str(),
+            name=f"prtb-{random_str()}",
             projectId=project.id,
             userId=admin_mc.user.id,
             groupPrincipalId="someauthprovidergroupid",
-            roleTemplateId="projectcatalogs-view")
+            roleTemplateId="projectcatalogs-view",
+        )
         remove_resource(prtb)
     assert e.value.error.status == 422
     assert "must target a user [userId]/[userPrincipalId] OR a group " \
@@ -34,9 +35,10 @@ def test_must_have_target(admin_mc, admin_pc, remove_resource):
 
     with pytest.raises(ApiError) as e:
         prtb = admin_client.create_project_role_template_binding(
-            name="prtb-" + random_str(),
+            name=f"prtb-{random_str()}",
             projectId=admin_pc.project.id,
-            roleTemplateId="projectcatalogs-view")
+            roleTemplateId="projectcatalogs-view",
+        )
         remove_resource(prtb)
     assert e.value.error.status == 422
     assert "must target a user [userId]/[userPrincipalId] OR a group " \
@@ -48,10 +50,11 @@ def test_cannot_update_subject_or_proj(admin_mc, admin_pc, remove_resource):
     admin_client = admin_mc.client
 
     old_prtb = admin_client.create_project_role_template_binding(
-        name="prtb-" + random_str(),
+        name=f"prtb-{random_str()}",
         projectId=admin_pc.project.id,
         userId=admin_mc.user.id,
-        roleTemplateId="projectcatalogs-view")
+        roleTemplateId="projectcatalogs-view",
+    )
     remove_resource(old_prtb)
 
     wait_for(lambda: admin_client.reload(old_prtb).userPrincipalId is not None)

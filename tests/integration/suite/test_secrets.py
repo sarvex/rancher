@@ -89,12 +89,7 @@ def test_secrets(admin_pc):
     assert 'namespace' not in secret.data
     assert secret.projectId == admin_pc.project.id
 
-    found = False
-    for i in client.list_secret():
-        if i.id == secret.id:
-            found = True
-            break
-
+    found = any(i.id == secret.id for i in client.list_secret())
     assert found
 
     client.delete(secret)
@@ -113,23 +108,7 @@ def test_certificates(admin_pc):
     assert cert.namespaceId is None
     assert 'namespace' not in cert
 
-    # cert = client.update(cert, certs='certdata2')
-    # cert = client.reload(cert)
-    #
-    # assert cert.baseType == 'secret'
-    # assert cert.type == 'certificate'
-    # assert cert.name == name
-    # assert cert.certs == 'certdata2'
-    # assert cert.namespaceId is None
-    # assert 'namespace' not in cert
-    # assert cert.projectId == pc.project.id
-
-    found = False
-    for i in client.list_certificate():
-        if i.id == cert.id:
-            found = True
-            break
-
+    found = any(i.id == cert.id for i in client.list_certificate())
     assert found
 
     cert = client.by_id_certificate(cert.id)
@@ -175,12 +154,7 @@ def test_docker_credential(admin_pc):
     assert 'namespace' not in cert
     assert cert.projectId == admin_pc.project.id
 
-    found = False
-    for i in client.list_docker_credential():
-        if i.id == cert.id:
-            found = True
-            break
-
+    found = any(i.id == cert.id for i in client.list_docker_credential())
     assert found
 
     cert = client.by_id_docker_credential(cert.id)
@@ -217,12 +191,7 @@ def test_basic_auth(admin_pc):
     assert 'namespace' not in cert
     assert cert.projectId == admin_pc.project.id
 
-    found = False
-    for i in client.list_basic_auth():
-        if i.id == cert.id:
-            found = True
-            break
-
+    found = any(i.id == cert.id for i in client.list_basic_auth())
     assert found
 
     cert = client.by_id_basic_auth(cert.id)
@@ -255,12 +224,7 @@ def test_ssh_auth(admin_pc):
     assert 'namespace' not in cert
     assert cert.projectId == admin_pc.project.id
 
-    found = False
-    for i in client.list_ssh_auth():
-        if i.id == cert.id:
-            found = True
-            break
-
+    found = any(i.id == cert.id for i in client.list_ssh_auth())
     assert found
 
     cert = client.by_id_ssh_auth(cert.id)
@@ -296,7 +260,7 @@ def test_secret_creation_kubectl(admin_mc, admin_cc, remove_resource):
     assert sec is not None
 
     # now get this through rancher api as namespacedCertificate
-    cert_id = namespace_name+':'+name
+    cert_id = f'{namespace_name}:{name}'
     proj_client = user_project_client(admin_mc, project)
     cert = proj_client.by_id_namespaced_certificate(cert_id)
     assert cert is not None
@@ -332,7 +296,7 @@ def test_malformed_secret_parse(admin_mc, admin_cc, remove_resource):
     assert sec is not None
 
     # now get this through rancher api as namespacedCertificate
-    cert_id = namespace_name+':'+name
+    cert_id = f'{namespace_name}:{name}'
     proj_client = user_project_client(admin_mc, project)
     cert = proj_client.by_id_namespaced_certificate(cert_id)
     assert cert is not None

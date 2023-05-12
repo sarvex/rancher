@@ -84,8 +84,7 @@ def get_system_project_client():
                                          clusterId=cluster.id).data
     assert len(projects) == 1
     project = projects[0]
-    sys_p_client = get_project_client_for_token(project, USER_TOKEN)
-    return sys_p_client
+    return get_project_client_for_token(project, USER_TOKEN)
 
 
 def create_cluster_logging(config, json_parsing=False):
@@ -122,11 +121,25 @@ def delete_logging(logging_project):
 
 
 def validate_websocket_view_logs():
-    url_base = 'wss://' + CATTLE_TEST_URL[8:] + \
-               '/k8s/clusters/' + namespace["cluster"].id + \
-               '/api/v1/namespaces/' + namespace["ns"].name + \
-               '/pods/' + namespace["pod"].name + \
-               '/log?container=' + namespace["pod"].containers[0].name
+    url_base = (
+        (
+            (
+                (
+                    (
+                        (
+                            f'wss://{CATTLE_TEST_URL[8:]}/k8s/clusters/'
+                            + namespace["cluster"].id
+                        )
+                        + '/api/v1/namespaces/'
+                    )
+                    + namespace["ns"].name
+                )
+                + '/pods/'
+            )
+            + namespace["pod"].name
+        )
+        + '/log?container='
+    ) + namespace["pod"].containers[0].name
     params_dict = {
         "tailLines": 500,
         "follow": True,
@@ -136,7 +149,7 @@ def validate_websocket_view_logs():
     params = urllib.parse.urlencode(params_dict, doseq=True,
                                     quote_via=urllib.parse.quote, safe='()')
 
-    url = url_base + "&" + params
+    url = f"{url_base}&{params}"
     wait_for_match(WebsocketLogParse(), url)
 
 
@@ -158,7 +171,7 @@ def wait_for_match(wslog, url, timeout=DEFAULT_TIMEOUT):
             wslog.last_message = ''
             break
     ws.close()
-    assert found == True
+    assert found
 
 
 @pytest.fixture(autouse="True")

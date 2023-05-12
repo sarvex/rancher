@@ -22,10 +22,11 @@ def test_alert_access(admin_mc, admin_pc, admin_cc, user_mc, remove_resource):
     able to deactivate an alert.
     """
     prtb = admin_mc.client.create_project_role_template_binding(
-        name="prtb-" + random_str(),
+        name=f"prtb-{random_str()}",
         userId=user_mc.user.id,
         projectId=admin_pc.project.id,
-        roleTemplateId="read-only")
+        roleTemplateId="read-only",
+    )
     remove_resource(prtb)
 
     # we get some project defaults, wait for them to come up

@@ -48,13 +48,11 @@ def validate_k8s_version(k8s_version, plugin="canal"):
                                     driver="rancherKubernetesEngine",
                                     rancherKubernetesEngineConfig=rke_config)
     assert cluster.state == "active"
-    i = 0
-    for aws_node in aws_nodes:
+    for i, aws_node in enumerate(aws_nodes):
         docker_run_cmd = \
             get_custom_host_registration_cmd(client, cluster,
                                              node_roles[i], aws_node)
         aws_node.execute_command(docker_run_cmd)
-        i += 1
     cluster = validate_cluster(client, cluster)
     if RANCHER_CLEANUP_CLUSTER == "True":
         delete_cluster(client, cluster)

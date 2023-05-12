@@ -65,25 +65,20 @@ PASSWORD = ""
 
 if AUTH_PROVIDER == "activeDirectory":
     PASSWORD = AUTH_USER_PASSWORD
-elif AUTH_PROVIDER == "openLdap":
-    PASSWORD = OPENLDAP_AUTH_USER_PASSWORD
 elif AUTH_PROVIDER == "freeIpa":
     PASSWORD = FREEIPA_AUTH_USER_PASSWORD
 
-CATTLE_AUTH_URL = \
-    CATTLE_TEST_URL + \
-    "/v3-public/" + AUTH_PROVIDER + "Providers/" + \
-    AUTH_PROVIDER.lower() + "?action=login"
+elif AUTH_PROVIDER == "openLdap":
+    PASSWORD = OPENLDAP_AUTH_USER_PASSWORD
+CATTLE_AUTH_URL = f"{CATTLE_TEST_URL}/v3-public/{AUTH_PROVIDER}Providers/{AUTH_PROVIDER.lower()}?action=login"
 
-CATTLE_AUTH_PROVIDER_URL = \
-    CATTLE_TEST_URL + "/v3/" + AUTH_PROVIDER + "Configs/" +\
-    AUTH_PROVIDER.lower()
+CATTLE_AUTH_PROVIDER_URL = (
+    f"{CATTLE_TEST_URL}/v3/{AUTH_PROVIDER}Configs/{AUTH_PROVIDER.lower()}"
+)
 
-CATTLE_AUTH_PRINCIPAL_URL = CATTLE_TEST_URL + "/v3/principals?action=search"
+CATTLE_AUTH_PRINCIPAL_URL = f"{CATTLE_TEST_URL}/v3/principals?action=search"
 
-CATTLE_AUTH_ENABLE_URL = CATTLE_AUTH_PROVIDER_URL + "?action=testAndApply"
-
-CATTLE_AUTH_DISABLE_URL = CATTLE_AUTH_PROVIDER_URL + "?action=disable"
+CATTLE_AUTH_ENABLE_URL = f"{CATTLE_AUTH_PROVIDER_URL}?action=testAndApply"
 
 setup = {"cluster1": None,
          "project1": None,
@@ -94,9 +89,11 @@ setup = {"cluster1": None,
          "auth_setup_data": {},
          "permission_denied_code": 403}
 
-auth_setup_fname = \
-    os.path.join(os.path.dirname(os.path.realpath(__file__)) + "/resource",
-                 AUTH_PROVIDER.lower() + ".json")
+CATTLE_AUTH_DISABLE_URL = f"{CATTLE_AUTH_PROVIDER_URL}?action=disable"
+auth_setup_fname = os.path.join(
+    f"{os.path.dirname(os.path.realpath(__file__))}/resource",
+    f"{AUTH_PROVIDER.lower()}.json",
+)
 
 
 def test_access_control_required_set_access_mode_required():
@@ -157,10 +154,10 @@ def test_disable_and_enable_nestedgroup_set_access_control_restricted():
 def test_ad_service_account_login():
     delete_project_users()
     delete_cluster_users()
-    auth_setup_data = setup["auth_setup_data"]
-    admin_user = auth_setup_data["admin_user"]
     # admin_user here is the AD admin user
     if AUTH_PROVIDER == "activeDirectory":
+        auth_setup_data = setup["auth_setup_data"]
+        admin_user = auth_setup_data["admin_user"]
         admin_token = login(admin_user, AUTH_USER_PASSWORD)
         disable_ad(admin_user, admin_token)
         enable_ad(admin_user, admin_token)
@@ -195,15 +192,22 @@ def special_character_users_login(access_mode):
         enable_freeipa(admin_user, admin_token)
 
     if AUTH_PROVIDER == "activeDirectory":
-        for user in auth_setup_data["specialchar_in_username"]:
-            allowed_principal_ids.append(principal_lookup(user, admin_token))
-        for user in auth_setup_data["specialchar_in_password"]:
-            allowed_principal_ids.append(principal_lookup(user, admin_token))
-        for user in auth_setup_data["specialchar_in_userdn"]:
-            allowed_principal_ids.append(principal_lookup(user, admin_token))
-        for group in auth_setup_data["specialchar_in_groupname"]:
-            allowed_principal_ids.append(principal_lookup(group, admin_token))
-
+        allowed_principal_ids.extend(
+            principal_lookup(user, admin_token)
+            for user in auth_setup_data["specialchar_in_username"]
+        )
+        allowed_principal_ids.extend(
+            principal_lookup(user, admin_token)
+            for user in auth_setup_data["specialchar_in_password"]
+        )
+        allowed_principal_ids.extend(
+            principal_lookup(user, admin_token)
+            for user in auth_setup_data["specialchar_in_userdn"]
+        )
+        allowed_principal_ids.extend(
+            principal_lookup(group, admin_token)
+            for group in auth_setup_data["specialchar_in_groupname"]
+        )
         allowed_principal_ids.append(
             principal_lookup(admin_user, admin_token))
         add_users_to_site_access(
@@ -220,15 +224,22 @@ def special_character_users_login(access_mode):
                 login(user, PASSWORD)
 
     if AUTH_PROVIDER == "openLdap":
-        for user in auth_setup_data["specialchar_in_user_cn_sn"]:
-            allowed_principal_ids.append(principal_lookup(user, admin_token))
-        for user in auth_setup_data["specialchar_in_uid"]:
-            allowed_principal_ids.append(principal_lookup(user, admin_token))
-        for user in auth_setup_data["specialchar_in_password"]:
-            allowed_principal_ids.append(principal_lookup(user, admin_token))
-        for group in auth_setup_data["specialchar_in_groupname"]:
-            allowed_principal_ids.append(principal_lookup(group, admin_token))
-
+        allowed_principal_ids.extend(
+            principal_lookup(user, admin_token)
+            for user in auth_setup_data["specialchar_in_user_cn_sn"]
+        )
+        allowed_principal_ids.extend(
+            principal_lookup(user, admin_token)
+            for user in auth_setup_data["specialchar_in_uid"]
+        )
+        allowed_principal_ids.extend(
+            principal_lookup(user, admin_token)
+            for user in auth_setup_data["specialchar_in_password"]
+        )
+        allowed_principal_ids.extend(
+            principal_lookup(group, admin_token)
+            for group in auth_setup_data["specialchar_in_groupname"]
+        )
         allowed_principal_ids.append(principal_lookup(admin_user, admin_token))
         add_users_to_site_access(
             admin_token, access_mode, allowed_principal_ids)
@@ -244,13 +255,18 @@ def special_character_users_login(access_mode):
                 login(user, PASSWORD)
 
     if AUTH_PROVIDER == "freeIpa":
-        for user in auth_setup_data["specialchar_in_users"]:
-            allowed_principal_ids.append(principal_lookup(user, admin_token))
-        for user in auth_setup_data["specialchar_in_password"]:
-            allowed_principal_ids.append(principal_lookup(user, admin_token))
-        for group in auth_setup_data["specialchar_in_groupname"]:
-            allowed_principal_ids.append(principal_lookup(group, admin_token))
-
+        allowed_principal_ids.extend(
+            principal_lookup(user, admin_token)
+            for user in auth_setup_data["specialchar_in_users"]
+        )
+        allowed_principal_ids.extend(
+            principal_lookup(user, admin_token)
+            for user in auth_setup_data["specialchar_in_password"]
+        )
+        allowed_principal_ids.extend(
+            principal_lookup(group, admin_token)
+            for group in auth_setup_data["specialchar_in_groupname"]
+        )
         allowed_principal_ids.append(
             principal_lookup(admin_user, admin_token))
         add_users_to_site_access(
@@ -271,11 +287,14 @@ def validate_access_control_set_access_mode(access_mode):
     auth_setup_data = setup["auth_setup_data"]
     admin_user = auth_setup_data["admin_user"]
     token = login(admin_user, PASSWORD)
-    allowed_principal_ids = []
-    for user in auth_setup_data["allowed_users"]:
-        allowed_principal_ids.append(principal_lookup(user, token))
-    for group in auth_setup_data["allowed_groups"]:
-        allowed_principal_ids.append(principal_lookup(group, token))
+    allowed_principal_ids = [
+        principal_lookup(user, token)
+        for user in auth_setup_data["allowed_users"]
+    ]
+    allowed_principal_ids.extend(
+        principal_lookup(group, token)
+        for group in auth_setup_data["allowed_groups"]
+    )
     allowed_principal_ids.append(principal_lookup(admin_user, token))
 
     # Add users and groups in allowed list to access rancher-server
@@ -299,13 +318,14 @@ def validate_access_control_set_access_mode(access_mode):
 
     # Add users and groups from dis allowed list to access rancher-server
 
-    for user in auth_setup_data["dis_allowed_users"]:
-        allowed_principal_ids.append(principal_lookup(user, token))
-
+    allowed_principal_ids.extend(
+        principal_lookup(user, token)
+        for user in auth_setup_data["dis_allowed_users"]
+    )
     for group in auth_setup_data["dis_allowed_groups"]:
-        for user in auth_setup_data[group]:
-            allowed_principal_ids.append(principal_lookup(user, token))
-
+        allowed_principal_ids.extend(
+            principal_lookup(user, token) for user in auth_setup_data[group]
+        )
     add_users_to_site_access(token, access_mode, allowed_principal_ids)
 
     for user in auth_setup_data["allowed_users"]:
@@ -325,12 +345,14 @@ def validate_access_control_set_access_mode(access_mode):
     # Remove users and groups from allowed list to access rancher-server
     allowed_principal_ids = [principal_lookup(admin_user, token)]
 
-    for user in auth_setup_data["dis_allowed_users"]:
-        allowed_principal_ids.append(principal_lookup(user, token))
+    allowed_principal_ids.extend(
+        principal_lookup(user, token)
+        for user in auth_setup_data["dis_allowed_users"]
+    )
     for group in auth_setup_data["dis_allowed_groups"]:
-        for user in auth_setup_data[group]:
-            allowed_principal_ids.append(principal_lookup(user, token))
-
+        allowed_principal_ids.extend(
+            principal_lookup(user, token) for user in auth_setup_data[group]
+        )
     add_users_to_site_access(token, access_mode, allowed_principal_ids)
 
     for user in auth_setup_data["allowed_users"]:
@@ -429,11 +451,10 @@ def validate_access_control_disable_and_enable_auth(access_mode):
         disable_freeipa(admin_user, admin_token)
         enable_freeipa(admin_user, admin_token)
 
-    # Login as users within allowed principal id list, which cannot perform
-    # disable action.
-    allowed_principal_ids = []
-    for user in auth_setup_data["allowed_users"]:
-        allowed_principal_ids.append(principal_lookup(user, admin_token))
+    allowed_principal_ids = [
+        principal_lookup(user, admin_token)
+        for user in auth_setup_data["allowed_users"]
+    ]
     allowed_principal_ids.append(principal_lookup(admin_user, admin_token))
 
     # Add users in allowed list to access rancher-server
@@ -472,10 +493,10 @@ def validate_access_control_disable_and_enable_nestedgroups(access_mode):
     if AUTH_PROVIDER == "freeIpa":
         enable_freeipa(admin_user, token)
 
-    allowed_principal_ids = []
-    for group in auth_setup_data["allowed_nestedgroups"]:
-        allowed_principal_ids.append(principal_lookup(group, token))
-
+    allowed_principal_ids = [
+        principal_lookup(group, token)
+        for group in auth_setup_data["allowed_nestedgroups"]
+    ]
     allowed_principal_ids.append(principal_lookup(admin_user, token))
 
     # Add users in allowed list to access rancher-server
@@ -489,7 +510,7 @@ def validate_access_control_disable_and_enable_nestedgroups(access_mode):
         for user in auth_setup_data["users_under_nestedgroups"]:
             login(user, PASSWORD)
 
-    if AUTH_PROVIDER == "activeDirectory" or AUTH_PROVIDER == "openLdap":
+    if AUTH_PROVIDER in ["activeDirectory", "openLdap"]:
         for user in auth_setup_data["users_under_nestedgroups"]:
             login(user, PASSWORD,
                   expected_status=setup["permission_denied_code"])
@@ -501,9 +522,10 @@ def validate_access_control_disable_and_enable_nestedgroups(access_mode):
         if AUTH_PROVIDER == "openLdap":
             enable_openldap(admin_user, token, nested=True)
 
-        allowed_principal_ids = []
-        for group in auth_setup_data["allowed_nestedgroups"]:
-            allowed_principal_ids.append(principal_lookup(group, token))
+        allowed_principal_ids = [
+            principal_lookup(group, token)
+            for group in auth_setup_data["allowed_nestedgroups"]
+        ]
         allowed_principal_ids.append(principal_lookup(admin_user, token))
 
         # Add users in allowed list to access rancher-server
@@ -518,31 +540,24 @@ def validate_access_control_disable_and_enable_nestedgroups(access_mode):
 
 
 def login(username, password, expected_status=201):
-    token = ""
     r = requests.post(CATTLE_AUTH_URL, json={
         'username': username,
         'password': password,
         'responseType': 'json',
     }, verify=False)
     assert r.status_code == expected_status
-    print("Login request for " + username + " " + str(expected_status))
-    if expected_status == 201:
-        token = r.json()['token']
-    return token
+    print(f"Login request for {username} {str(expected_status)}")
+    return r.json()['token'] if expected_status == 201 else ""
 
 
 def get_tls(certificate):
-    if len(certificate) != 0:
-        tls = True
-    else:
-        tls = False
-    return tls
+    return len(certificate) != 0
 
 
 def enable_openldap(username, token, enable_url=CATTLE_AUTH_ENABLE_URL,
                     password=PASSWORD, nested=False,
                     expected_status=200):
-    headers = {'Authorization': 'Bearer ' + token}
+    headers = {'Authorization': f'Bearer {token}'}
     ldap_config = {
         "accessMode": "unrestricted",
         "connectionTimeout": CONNECTION_TIMEOUT,
@@ -584,7 +599,7 @@ def enable_openldap(username, token, enable_url=CATTLE_AUTH_ENABLE_URL,
 
 
 def disable_openldap(username, token, expected_status=200):
-    headers = {'Authorization': 'Bearer ' + token}
+    headers = {'Authorization': f'Bearer {token}'}
     r = requests.post(CATTLE_AUTH_DISABLE_URL, json={
         'username': username,
         'password': PASSWORD
@@ -596,7 +611,7 @@ def disable_openldap(username, token, expected_status=200):
 
 def enable_ad(username, token, enable_url=CATTLE_AUTH_ENABLE_URL,
               password=AUTH_USER_PASSWORD, nested=False, expected_status=200):
-    headers = {'Authorization': 'Bearer ' + token}
+    headers = {'Authorization': f'Bearer {token}'}
     active_directory_config = {
         "accessMode": "unrestricted",
         "certificate": CA_CERTIFICATE,
@@ -639,7 +654,7 @@ def enable_ad(username, token, enable_url=CATTLE_AUTH_ENABLE_URL,
 
 
 def disable_ad(username, token, expected_status=200):
-    headers = {'Authorization': 'Bearer ' + token}
+    headers = {'Authorization': f'Bearer {token}'}
     r = requests.post(CATTLE_AUTH_DISABLE_URL,
                       json={"enabled": False,
                             "username": username,
@@ -654,7 +669,7 @@ def disable_ad(username, token, expected_status=200):
 def enable_freeipa(username, token, enable_url=CATTLE_AUTH_ENABLE_URL,
                    password=PASSWORD, nested=False,
                    expected_status=200):
-    headers = {'Authorization': 'Bearer ' + token}
+    headers = {'Authorization': f'Bearer {token}'}
     r = requests.post(enable_url, json={
         "ldapConfig": {
             "accessMode": "unrestricted",
@@ -692,7 +707,7 @@ def enable_freeipa(username, token, enable_url=CATTLE_AUTH_ENABLE_URL,
 
 
 def disable_freeipa(username, token, expected_status=200):
-    headers = {'Authorization': 'Bearer ' + token}
+    headers = {'Authorization': f'Bearer {token}'}
     r = requests.post(CATTLE_AUTH_DISABLE_URL, json={
         "enabled": False,
         "username": username,
@@ -704,24 +719,25 @@ def disable_freeipa(username, token, expected_status=200):
 
 
 def principal_lookup(name, token):
-    headers = {'Authorization': 'Bearer ' + token}
+    headers = {'Authorization': f'Bearer {token}'}
     r = requests.post(CATTLE_AUTH_PRINCIPAL_URL,
                       json={'name': name, 'responseType': 'json'},
                       verify=False, headers=headers)
     assert r.status_code == 200
     principals = r.json()['data']
     for principal in principals:
-        if principal['principalType'] == "user":
-            if principal['loginName'] == name:
-                return principal["id"]
-        if principal['principalType'] == "group":
-            if principal['name'] == name:
-                return principal["id"]
+        if (
+            principal['principalType'] == "user"
+            and principal['loginName'] == name
+        ):
+            return principal["id"]
+        if principal['principalType'] == "group" and principal['name'] == name:
+            return principal["id"]
     assert False
 
 
 def add_users_to_site_access(token, access_mode, allowed_principal_ids):
-    headers = {'Authorization': 'Bearer ' + token}
+    headers = {'Authorization': f'Bearer {token}'}
     r = requests.put(CATTLE_AUTH_PROVIDER_URL, json={
         'allowedPrincipalIds': allowed_principal_ids,
         'accessMode': access_mode,
@@ -731,19 +747,19 @@ def add_users_to_site_access(token, access_mode, allowed_principal_ids):
 
 
 def assign_user_to_cluster(client, principal_id, cluster, role_template_id):
-    crtb = client.create_cluster_role_template_binding(
+    return client.create_cluster_role_template_binding(
         clusterId=cluster.id,
         roleTemplateId=role_template_id,
-        userPrincipalId=principal_id)
-    return crtb
+        userPrincipalId=principal_id,
+    )
 
 
 def assign_user_to_project(client, principal_id, project, role_template_id):
-    prtb = client.create_project_role_template_binding(
+    return client.create_project_role_template_binding(
         projectId=project.id,
         roleTemplateId=role_template_id,
-        userPrincipalId=principal_id)
-    return prtb
+        userPrincipalId=principal_id,
+    )
 
 
 def delete_existing_users_in_cluster(client, cluster):
@@ -814,13 +830,12 @@ def create_project_client(request):
         client.delete(setup["project1"])
         client.delete(setup["project2"])
         delete_cluster_users()
-        if cluster_total == 0:
-            if aws_nodes1 and aws_nodes2:
-                cluster_cleanup(client, cluster1, aws_nodes1)
-                cluster_cleanup(client, cluster2, aws_nodes2)
-        if cluster_total == 1:
-            if aws_nodes2:
-                cluster_cleanup(client, cluster2, aws_nodes2)
+        if cluster_total == 0 and aws_nodes1 and aws_nodes2:
+            cluster_cleanup(client, cluster1, aws_nodes1)
+            cluster_cleanup(client, cluster2, aws_nodes2)
+        if cluster_total == 1 and aws_nodes2:
+            cluster_cleanup(client, cluster2, aws_nodes2)
+
     request.addfinalizer(fin)
 
 
@@ -837,5 +852,4 @@ def delete_project_users():
 def load_setup_data():
     auth_setup_file = open(auth_setup_fname)
     auth_setup_str = auth_setup_file.read()
-    auth_setup_data = json.loads(auth_setup_str)
-    return auth_setup_data
+    return json.loads(auth_setup_str)

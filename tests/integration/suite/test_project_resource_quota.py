@@ -55,10 +55,12 @@ def wait_for_applied_quota_set(admin_cc_client, ns, timeout=30):
 def test_namespace_resource_quota(admin_cc, admin_pc):
     q = default_project_quota()
     client = admin_cc.management.client
-    p = client.create_project(name='test-' + random_str(),
-                              clusterId=admin_cc.cluster.id,
-                              resourceQuota=q,
-                              namespaceDefaultResourceQuota=q)
+    p = client.create_project(
+        name=f'test-{random_str()}',
+        clusterId=admin_cc.cluster.id,
+        resourceQuota=q,
+        namespaceDefaultResourceQuota=q,
+    )
 
     p = admin_cc.management.client.wait_success(p)
     assert p.resourceQuota is not None
@@ -76,10 +78,12 @@ def test_namespace_resource_quota(admin_cc, admin_pc):
 def test_project_resource_quota_fields(admin_cc):
     q = default_project_quota()
     client = admin_cc.management.client
-    p = client.create_project(name='test-' + random_str(),
-                              clusterId=admin_cc.cluster.id,
-                              resourceQuota=q,
-                              namespaceDefaultResourceQuota=q)
+    p = client.create_project(
+        name=f'test-{random_str()}',
+        clusterId=admin_cc.cluster.id,
+        resourceQuota=q,
+        namespaceDefaultResourceQuota=q,
+    )
     p = admin_cc.management.client.wait_success(p)
 
     assert p.resourceQuota is not None
@@ -91,10 +95,12 @@ def test_project_resource_quota_fields(admin_cc):
 def test_resource_quota_ns_create(admin_cc, admin_pc):
     q = default_project_quota()
     client = admin_cc.management.client
-    p = client.create_project(name='test-' + random_str(),
-                              clusterId=admin_cc.cluster.id,
-                              resourceQuota=q,
-                              namespaceDefaultResourceQuota=q)
+    p = client.create_project(
+        name=f'test-{random_str()}',
+        clusterId=admin_cc.cluster.id,
+        resourceQuota=q,
+        namespaceDefaultResourceQuota=q,
+    )
     p = admin_cc.management.client.wait_success(p)
     assert p.resourceQuota is not None
     assert p.resourceQuota.limit.pods == '100'
@@ -111,10 +117,12 @@ def test_default_resource_quota_ns_set(admin_cc, admin_pc):
     q = ns_default_quota()
     pq = default_project_quota()
     client = admin_cc.management.client
-    p = client.create_project(name='test-' + random_str(),
-                              clusterId=admin_cc.cluster.id,
-                              resourceQuota=pq,
-                              namespaceDefaultResourceQuota=q)
+    p = client.create_project(
+        name=f'test-{random_str()}',
+        clusterId=admin_cc.cluster.id,
+        resourceQuota=pq,
+        namespaceDefaultResourceQuota=q,
+    )
     assert p.resourceQuota is not None
     assert p.namespaceDefaultResourceQuota is not None
 
@@ -127,10 +135,12 @@ def test_default_resource_quota_ns_set(admin_cc, admin_pc):
 def test_quota_ns_create_exceed(admin_cc, admin_pc):
     q = default_project_quota()
     client = admin_cc.management.client
-    p = client.create_project(name='test-' + random_str(),
-                              clusterId=admin_cc.cluster.id,
-                              resourceQuota=q,
-                              namespaceDefaultResourceQuota=q)
+    p = client.create_project(
+        name=f'test-{random_str()}',
+        clusterId=admin_cc.cluster.id,
+        resourceQuota=q,
+        namespaceDefaultResourceQuota=q,
+    )
     p = admin_cc.management.client.wait_success(p)
     assert p.resourceQuota is not None
 
@@ -148,10 +158,12 @@ def test_default_resource_quota_ns_create_invalid_combined(admin_cc, admin_pc):
     pq = default_project_quota()
     q = ns_default_quota()
     client = admin_cc.management.client
-    p = client.create_project(name='test-' + random_str(),
-                              clusterId=admin_cc.cluster.id,
-                              resourceQuota=pq,
-                              namespaceDefaultResourceQuota=q)
+    p = client.create_project(
+        name=f'test-{random_str()}',
+        clusterId=admin_cc.cluster.id,
+        resourceQuota=pq,
+        namespaceDefaultResourceQuota=q,
+    )
     p = admin_cc.management.client.wait_success(p)
     assert p.resourceQuota is not None
     assert p.namespaceDefaultResourceQuota is not None
@@ -192,10 +204,12 @@ def test_project_used_quota(admin_cc, admin_pc):
     pq = default_project_quota()
     q = ns_default_quota()
     client = admin_cc.management.client
-    p = client.create_project(name='test-' + random_str(),
-                              clusterId=admin_cc.cluster.id,
-                              resourceQuota=pq,
-                              namespaceDefaultResourceQuota=q)
+    p = client.create_project(
+        name=f'test-{random_str()}',
+        clusterId=admin_cc.cluster.id,
+        resourceQuota=pq,
+        namespaceDefaultResourceQuota=q,
+    )
     p = admin_cc.management.client.wait_success(p)
     assert p.resourceQuota is not None
     assert p.namespaceDefaultResourceQuota is not None
@@ -231,8 +245,9 @@ def wait_for_used_pods_limit_set(admin_cc_client, project, timeout=30,
 
 def test_default_resource_quota_project_update(admin_cc, admin_pc):
     client = admin_cc.management.client
-    p = client.create_project(name='test-' + random_str(),
-                              clusterId=admin_cc.cluster.id)
+    p = client.create_project(
+        name=f'test-{random_str()}', clusterId=admin_cc.cluster.id
+    )
 
     ns = admin_pc.cluster.client.create_namespace(name=random_str(),
                                                   projectId=p.id)
@@ -254,34 +269,42 @@ def test_api_validation_project(admin_cc):
     q = default_project_quota()
     # default namespace quota missing
     with pytest.raises(ApiError) as e:
-        client.create_project(name='test-' + random_str(),
-                              clusterId=admin_cc.cluster.id,
-                              resourceQuota=q)
+        client.create_project(
+            name=f'test-{random_str()}',
+            clusterId=admin_cc.cluster.id,
+            resourceQuota=q,
+        )
 
     assert e.value.error.status == 422
 
     # default namespace quota as None
     with pytest.raises(ApiError) as e:
-        client.create_project(name='test-' + random_str(),
-                              clusterId=admin_cc.cluster.id,
-                              resourceQuota=q,
-                              namespaceDefaultResourceQuota=None)
+        client.create_project(
+            name=f'test-{random_str()}',
+            clusterId=admin_cc.cluster.id,
+            resourceQuota=q,
+            namespaceDefaultResourceQuota=None,
+        )
 
     assert e.value.error.status == 422
 
     with pytest.raises(ApiError) as e:
-        client.create_project(name='test-' + random_str(),
-                              clusterId=admin_cc.cluster.id,
-                              namespaceDefaultResourceQuota=q)
+        client.create_project(
+            name=f'test-{random_str()}',
+            clusterId=admin_cc.cluster.id,
+            namespaceDefaultResourceQuota=q,
+        )
 
     assert e.value.error.status == 422
 
     lq = ns_large_quota()
     with pytest.raises(ApiError) as e:
-        client.create_project(name='test-' + random_str(),
-                              clusterId=admin_cc.cluster.id,
-                              resourceQuota=q,
-                              namespaceDefaultResourceQuota=lq)
+        client.create_project(
+            name=f'test-{random_str()}',
+            clusterId=admin_cc.cluster.id,
+            resourceQuota=q,
+            namespaceDefaultResourceQuota=lq,
+        )
 
     assert e.value.error.status == 422
 
@@ -289,8 +312,9 @@ def test_api_validation_project(admin_cc):
                     "services": "100"}}
     iq = {"limit": {"pods": "100"}}
     client = admin_cc.management.client
-    p = client.create_project(name='test-' + random_str(),
-                              clusterId=admin_cc.cluster.id)
+    p = client.create_project(
+        name=f'test-{random_str()}', clusterId=admin_cc.cluster.id
+    )
     with pytest.raises(ApiError) as e:
         admin_cc.management.client.update(p,
                                           resourceQuota=pq,
@@ -303,10 +327,12 @@ def test_api_validation_namespace(admin_cc, admin_pc):
     q = {"limit": {"pods": "10",
                    "services": "10"}}
     client = admin_cc.management.client
-    p = client.create_project(name='test-' + random_str(),
-                              clusterId=admin_cc.cluster.id,
-                              resourceQuota=pq,
-                              namespaceDefaultResourceQuota=q)
+    p = client.create_project(
+        name=f'test-{random_str()}',
+        clusterId=admin_cc.cluster.id,
+        resourceQuota=pq,
+        namespaceDefaultResourceQuota=q,
+    )
     p = admin_cc.management.client.wait_success(p)
     assert p.resourceQuota is not None
     assert p.namespaceDefaultResourceQuota is not None
@@ -323,10 +349,12 @@ def test_used_quota_exact_match(admin_cc, admin_pc):
     pq = {"limit": {"pods": "10"}}
     q = {"limit": {"pods": "2"}}
     client = admin_cc.management.client
-    p = client.create_project(name='test-' + random_str(),
-                              clusterId=admin_cc.cluster.id,
-                              resourceQuota=pq,
-                              namespaceDefaultResourceQuota=q)
+    p = client.create_project(
+        name=f'test-{random_str()}',
+        clusterId=admin_cc.cluster.id,
+        resourceQuota=pq,
+        namespaceDefaultResourceQuota=q,
+    )
     p = admin_cc.management.client.wait_success(p)
     assert p.resourceQuota is not None
     assert p.namespaceDefaultResourceQuota is not None
@@ -356,10 +384,12 @@ def test_add_remove_fields(admin_cc, admin_pc):
     pq = {"limit": {"pods": "10"}}
     q = {"limit": {"pods": "2"}}
     client = admin_cc.management.client
-    p = client.create_project(name='test-' + random_str(),
-                              clusterId=admin_cc.cluster.id,
-                              resourceQuota=pq,
-                              namespaceDefaultResourceQuota=q)
+    p = client.create_project(
+        name=f'test-{random_str()}',
+        clusterId=admin_cc.cluster.id,
+        resourceQuota=pq,
+        namespaceDefaultResourceQuota=q,
+    )
     p = admin_cc.management.client.wait_success(p)
     assert p.resourceQuota is not None
     assert p.namespaceDefaultResourceQuota is not None
@@ -429,12 +459,13 @@ def wait_for_used_svcs_limit_set(admin_cc_client, project, timeout=30,
 
 def test_update_quota(admin_cc, admin_pc):
     client = admin_cc.management.client
-    p = client.create_project(name='test-' + random_str(),
-                              clusterId=admin_cc.cluster.id)
+    p = client.create_project(
+        name=f'test-{random_str()}', clusterId=admin_cc.cluster.id
+    )
     p = admin_cc.management.client.wait_success(p)
 
     # create 4 namespaces
-    for x in range(4):
+    for _ in range(4):
         admin_pc.cluster.client.create_namespace(name=random_str(),
                                                  projectId=p.id)
 
@@ -453,11 +484,13 @@ def test_container_resource_limit(admin_cc, admin_pc):
     q = default_project_quota()
     lmt = ns_default_limit()
     client = admin_cc.management.client
-    p = client.create_project(name='test-' + random_str(),
-                              clusterId=admin_cc.cluster.id,
-                              resourceQuota=q,
-                              namespaceDefaultResourceQuota=q,
-                              containerDefaultResourceLimit=lmt)
+    p = client.create_project(
+        name=f'test-{random_str()}',
+        clusterId=admin_cc.cluster.id,
+        resourceQuota=q,
+        namespaceDefaultResourceQuota=q,
+        containerDefaultResourceLimit=lmt,
+    )
 
     p = admin_cc.management.client.wait_success(p)
     assert p.resourceQuota is not None

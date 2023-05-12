@@ -36,11 +36,25 @@ def test_websocket_launch_kubectl():
 
 
 def test_websocket_exec_shell():
-    url_base = 'wss://' + CATTLE_TEST_URL[8:] + \
-               '/k8s/clusters/' + namespace["cluster"].id + \
-               '/api/v1/namespaces/' + namespace["ns"] + \
-               '/pods/' + namespace["pod"].name + \
-               '/exec?container=' + namespace["pod"].containers[0].name
+    url_base = (
+        (
+            (
+                (
+                    (
+                        (
+                            f'wss://{CATTLE_TEST_URL[8:]}/k8s/clusters/'
+                            + namespace["cluster"].id
+                        )
+                        + '/api/v1/namespaces/'
+                    )
+                    + namespace["ns"]
+                )
+                + '/pods/'
+            )
+            + namespace["pod"].name
+        )
+        + '/exec?container='
+    ) + namespace["pod"].containers[0].name
     params_dict = {
         "stdout": 1,
         "stdin": 1,
@@ -56,7 +70,7 @@ def test_websocket_exec_shell():
     }
     params = urllib.parse.urlencode(params_dict, doseq=True,
                                     quote_via=urllib.parse.quote, safe='()')
-    url = url_base + "&" + params
+    url = f"{url_base}&{params}"
     ws = create_connection(url, ["base64.channel.k8s.io"])
     logparse = WebsocketLogParse()
     logparse.start_thread(target=logparse.receiver, args=(ws, True))
@@ -70,11 +84,25 @@ def test_websocket_exec_shell():
 
 
 def test_websocket_view_logs():
-    url_base = 'wss://' + CATTLE_TEST_URL[8:] + \
-               '/k8s/clusters/' + namespace["cluster"].id + \
-               '/api/v1/namespaces/' + namespace["ns"] + \
-               '/pods/' + namespace["pod"].name + \
-               '/log?container=' + namespace["pod"].containers[0].name
+    url_base = (
+        (
+            (
+                (
+                    (
+                        (
+                            f'wss://{CATTLE_TEST_URL[8:]}/k8s/clusters/'
+                            + namespace["cluster"].id
+                        )
+                        + '/api/v1/namespaces/'
+                    )
+                    + namespace["ns"]
+                )
+                + '/pods/'
+            )
+            + namespace["pod"].name
+        )
+        + '/log?container='
+    ) + namespace["pod"].containers[0].name
     params_dict = {
         "tailLines": 500,
         "follow": True,
@@ -83,7 +111,7 @@ def test_websocket_view_logs():
     }
     params = urllib.parse.urlencode(params_dict, doseq=True,
                                     quote_via=urllib.parse.quote, safe='()')
-    url = url_base + "&" + params
+    url = f"{url_base}&{params}"
     ws = create_connection(url, ["base64.binary.k8s.io"])
     logparse = WebsocketLogParse()
     logparse.start_thread(target=logparse.receiver, args=(ws, False))
@@ -129,7 +157,7 @@ def create_project_client(request):
 
 def send_a_command(ws_connection, command):
     cmd_enc = base64.b64encode(command.encode('utf-8')).decode('utf-8')
-    ws_connection.send('0' + cmd_enc)
+    ws_connection.send(f'0{cmd_enc}')
     # sends the command to the webSocket
     ws_connection.send('0DQ==')
     time.sleep(5)

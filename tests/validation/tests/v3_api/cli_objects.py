@@ -24,11 +24,13 @@ class RancherCli(BaseCli):
         self.switch_context(self.DEFAULT_CONTEXT)
 
     def cleanup(self):
-        self.log.info("Cleaning up created test project: {}".format(
-            self.default_project["name"]))
+        self.log.info(
+            f'Cleaning up created test project: {self.default_project["name"]}'
+        )
         self.switch_context(self.default_project["id"])
-        self.run_command("project delete {}".format(
-            self.default_project["id"]), expect_error=True)
+        self.run_command(
+            f'project delete {self.default_project["id"]}', expect_error=True
+        )
 
 
 class ProjectCli(BaseCli):
@@ -39,8 +41,7 @@ class ProjectCli(BaseCli):
         if cluster_id is None:
             cluster = self.get_context()[0]
             cluster_id = self.get_cluster_by_name(cluster)["id"]
-        self.run_command("projects create --cluster {} {}".format(cluster_id,
-                                                                  name))
+        self.run_command(f"projects create --cluster {cluster_id} {name}")
         project = None
         for p in self.get_current_projects():
             if p["name"] == name:
@@ -63,7 +64,7 @@ class ProjectCli(BaseCli):
         return project
 
     def delete_project(self, name):
-        self.run_command("projects rm {}".format(name))
+        self.run_command(f"projects rm {name}")
 
     @classmethod
     def get_current_projects(cls):
@@ -88,16 +89,18 @@ class ProjectCli(BaseCli):
     def create_namespace(self, name=None):
         if name is None:
             name = random_test_name("nstest")
-        self.run_command("namespace create {}".format(name))
+        self.run_command(f"namespace create {name}")
         return name
 
     def delete_namespace(self, name):
-        self.run_command("namespace delete {}".format(name))
+        self.run_command(f"namespace delete {name}")
 
         self.log.info("Waiting for the namespace to be deleted")
-        deleted = self.wait_for_ready("namespace ls -q", name, condition_func=
-                                      lambda val, l: val not in l.splitlines())
-        return deleted
+        return self.wait_for_ready(
+            "namespace ls -q",
+            name,
+            condition_func=lambda val, l: val not in l.splitlines(),
+        )
 
     def get_namespaces(self):
         namespaces = self.run_command("namespace ls --format "
@@ -106,7 +109,7 @@ class ProjectCli(BaseCli):
         return namespaces.splitlines()
 
     def move_namespace(self, name, project_id):
-        self.run_command("namespace move {} {}".format(name, project_id))
+        self.run_command(f"namespace move {name} {project_id}")
 
 
 class AppCli(BaseCli):
@@ -115,16 +118,16 @@ class AppCli(BaseCli):
         version = kwargs.get("version", None)
         context = kwargs.get("context", self.DEFAULT_CONTEXT)
         values = kwargs.get("values", None)
-        cmd = "apps install {} --no-prompt -n {}".format(app_name, namespace)
+        cmd = f"apps install {app_name} --no-prompt -n {namespace}"
         if version is not None:
-            cmd = cmd + " --version {}".format(version)
+            cmd += f" --version {version}"
         if values is not None:
-            cmd = cmd + " --values {}".format(values)
+            cmd += f" --values {values}"
 
         self.switch_context(context)
         app = self.run_command(cmd)
         app = app.split('"')[1].split(" ")[2]
-        self.log.info("App is: {}".format(app))
+        self.log.info(f"App is: {app}")
 
         self.log.info("Waiting for the app to be created")
         # Wait for app to be "deploying"
@@ -137,8 +140,9 @@ class AppCli(BaseCli):
                                       "| awk '{print $1}'", app,
                                       timeout=timeout)
         if not created:
-            self.log.warn("Failed to install app {} within timeout of {} "
-                          "seconds.".format(app_name, timeout))
+            self.log.warn(
+                f"Failed to install app {app_name} within timeout of {timeout} seconds."
+            )
         return self.get(app)
 
     def get(self, app_name):
@@ -153,9 +157,8 @@ class AppCli(BaseCli):
         timeout = kwargs.get("timeout", DEFAULT_TIMEOUT)
         version = kwargs.get("version", None)
         if version is None:
-            version = self.run_command("apps st {} | tail -1".format(
-                app["template"]))
-        self.run_command("apps upgrade {} {}".format(app["name"], version))
+            version = self.run_command(f'apps st {app["template"]} | tail -1')
+        self.run_command(f'apps upgrade {app["name"]} {version}')
 
         self.log.info("Waiting for the app to be upgraded")
         # Wait for app to be "deploying"
@@ -166,8 +169,9 @@ class AppCli(BaseCli):
                                        "{{.App.State}}' | grep active "
                                        "| awk '{print $1}'", app["name"])
         if not upgraded:
-            self.log.warn("Failed to upgrade app {} within timeout of {} "
-                          "seconds.".format(app["name"], timeout))
+            self.log.warn(
+                f'Failed to upgrade app {app["name"]} within timeout of {timeout} seconds.'
+            )
         return self.get(app["name"])
 
     def rollback(self, app, desired_version, **kwargs):
@@ -177,7 +181,7 @@ class AppCli(BaseCli):
             "apps rollback -r %s | grep %s | awk '{print $1}'" %
             (app["name"], desired_version)).splitlines()[0]
 
-        self.run_command("apps rollback {} {}".format(app["name"], revision))
+        self.run_command(f'apps rollback {app["name"]} {revision}')
 
         self.log.info("Waiting for the app to be rolled back")
         # Wait for app to be "deploying"
@@ -188,19 +192,22 @@ class AppCli(BaseCli):
                                           "{{.App.State}}' | grep active "
                                           "| awk '{print $1}'", app["name"])
         if not rolled_back:
-            self.log.warn("Failed to rollback app {} within timeout of {} "
-                          "seconds.".format(app["name"], timeout))
+            self.log.warn(
+                f'Failed to rollback app {app["name"]} within timeout of {timeout} seconds.'
+            )
         return self.get(app["name"])
 
     def delete(self, app, **kwargs):
         timeout = kwargs.get("timeout", DEFAULT_TIMEOUT)
-        self.run_command("apps delete {}".format(app["name"]))
+        self.run_command(f'apps delete {app["name"]}')
 
         self.log.info("Waiting for the app to be deleted")
-        deleted = self.wait_for_ready("apps ls -q", app["name"],
-                                      timeout=timeout, condition_func=
-                                      lambda val, l: val not in l.splitlines())
-        return deleted
+        return self.wait_for_ready(
+            "apps ls -q",
+            app["name"],
+            timeout=timeout,
+            condition_func=lambda val, l: val not in l.splitlines(),
+        )
 
     def install_local_dir(self, catalog_url, branch, chart, **kwargs):
         timeout = kwargs.get("timeout", DEFAULT_TIMEOUT)
@@ -208,16 +215,14 @@ class AppCli(BaseCli):
         version = kwargs.get("version", None)
         current_dir = os.getcwd()
         os.chdir(DATA_SUBDIR)
-        get_charts_cmd = \
-            run_command("git clone -b {} {}".format(branch, catalog_url))
+        get_charts_cmd = run_command(f"git clone -b {branch} {catalog_url}")
         time.sleep(5)
-        os.chdir("{}/integration-test-charts/charts/{}/{}".
-                 format(DATA_SUBDIR, chart, version))
+        os.chdir(f"{DATA_SUBDIR}/integration-test-charts/charts/{chart}/{version}")
         app_name = random_str()
         self.switch_context(context)
-        app = self.run_command("apps install . {}".format(app_name))
+        app = self.run_command(f"apps install . {app_name}")
         app = app.split('"')[1].split(" ")[2]
-        self.log.info("App is: {}".format(app))
+        self.log.info(f"App is: {app}")
         self.log.info("Waiting for the app to be created")
         self.wait_for_ready("apps ls --format '{{.App.Name}} {{.App.State}}' "
                             "| grep deploying | awk '{print $1}'", app,
@@ -228,8 +233,9 @@ class AppCli(BaseCli):
                                       "| awk '{print $1}'", app,
                                       timeout=timeout)
         if not created:
-            self.log.warn("Failed to install app {} within timeout of {} "
-                          "seconds.".format(app_name, timeout))
+            self.log.warn(
+                f"Failed to install app {app_name} within timeout of {timeout} seconds."
+            )
         os.chdir(current_dir)
         return self.get(app)
 
@@ -241,18 +247,18 @@ class MultiClusterAppCli(BaseCli):
         targets = kwargs.get("targets", [self.DEFAULT_CONTEXT])
         values = kwargs.get("values", None)
         role = kwargs.get("role", "project-member")
-        cmd = "mcapps install {} --no-prompt --role {}".format(template_name, role)
+        cmd = f"mcapps install {template_name} --no-prompt --role {role}"
         for t in targets:
-            cmd += " --target {}".format(t)
+            cmd += f" --target {t}"
         if version is not None:
-            cmd += " --version {}".format(version)
+            cmd += f" --version {version}"
         if values is not None:
             for k, v in values.items():
-                cmd += " --set {}={}".format(k, v)
+                cmd += f" --set {k}={v}"
 
         app = self.run_command(cmd)
         app = app.split('"')[1]
-        self.log.info("Multi-Cluster App is: {}".format(app))
+        self.log.info(f"Multi-Cluster App is: {app}")
         # Wait for multi-cluster app to be "deploying"
         self.wait_for_ready("mcapps ls --format '{{.App.Name}} {{.App.State}}'"
                             " | grep deploying | awk '{print $1}'",
@@ -264,9 +270,9 @@ class MultiClusterAppCli(BaseCli):
                                       "| awk '{print $1}'", app,
                                       timeout=timeout)
         if not created:
-            self.log.warn("Failed to install multi-cluster app {} within "
-                          "timeout of {} seconds.".format(
-                            template_name, timeout))
+            self.log.warn(
+                f"Failed to install multi-cluster app {template_name} within timeout of {timeout} seconds."
+            )
         return self.get(app)
 
     def get(self, app_name):
@@ -296,9 +302,8 @@ class MultiClusterAppCli(BaseCli):
         timeout = kwargs.get("timeout", DEFAULT_TIMEOUT)
         version = kwargs.get("version", None)
         if version is None:
-            version = self.run_command("mcapps st {} | tail -1".format(
-                app["template"]))
-        self.run_command("mcapps upgrade {} {}".format(app["name"], version))
+            version = self.run_command(f'mcapps st {app["template"]} | tail -1')
+        self.run_command(f'mcapps upgrade {app["name"]} {version}')
 
         self.log.info("Waiting for the multi-cluster app to be upgraded")
         # Wait for multi-cluster app to be "deploying"
@@ -310,14 +315,14 @@ class MultiClusterAppCli(BaseCli):
                                        "{{.App.State}}' | grep active "
                                        "| awk '{print $1}'", app["name"])
         if not upgraded:
-            self.log.warn("Failed to upgrade multi-cluster app {} within "
-                          "timeout of {} seconds.".format(
-                            app["name"], timeout))
+            self.log.warn(
+                f'Failed to upgrade multi-cluster app {app["name"]} within timeout of {timeout} seconds.'
+            )
         return self.get(app["name"])
 
     def rollback(self, app_name, revision, **kwargs):
         timeout = kwargs.get("timeout", DEFAULT_TIMEOUT)
-        self.run_command("mcapps rollback {} {}".format(app_name, revision))
+        self.run_command(f"mcapps rollback {app_name} {revision}")
 
         self.log.info("Waiting for the multi-cluster app to be rolled back")
         # Wait for multi-cluster app to be "deploying"
@@ -329,13 +334,14 @@ class MultiClusterAppCli(BaseCli):
                                           "{{.App.State}}' | grep active "
                                           "| awk '{print $1}'", app_name)
         if not rolled_back:
-            self.log.warn("Failed to rollback multi-cluster app {} within "
-                          "timeout of {} seconds.".format(app_name, timeout))
+            self.log.warn(
+                f"Failed to rollback multi-cluster app {app_name} within timeout of {timeout} seconds."
+            )
         return self.get(app_name)
 
     def delete(self, app, **kwargs):
         timeout = kwargs.get("timeout", DEFAULT_TIMEOUT)
-        self.run_command("mcapps delete {}".format(app["name"]))
+        self.run_command(f'mcapps delete {app["name"]}')
 
         self.log.info("Waiting for the app to be deleted")
         deleted = self.wait_for_ready("mcapps ls -q", app["name"],
@@ -356,16 +362,15 @@ class CatalogCli(BaseCli):
     def add(self, url, **kwargs):
         branch = kwargs.get("branch", None)
         catalog_name = random_test_name("ctest")
-        cmd = "catalog add {} {}".format(catalog_name, url)
+        cmd = f"catalog add {catalog_name} {url}"
         if branch is not None:
-            cmd = cmd + " --branch " + branch
+            cmd = f"{cmd} --branch {branch}"
         self.run_command(cmd)
         return self.get(catalog_name)
 
     def delete(self, name):
-        self.run_command("catalog delete " + name)
-        deleted = self.get(name) is None
-        return deleted
+        self.run_command(f"catalog delete {name}")
+        return self.get(name) is None
 
     def get(self, name):
         catalog = self.run_command("catalog ls --format '{{.Catalog.Name}}"
@@ -380,25 +385,21 @@ class CatalogCli(BaseCli):
 
 class ClusterCli(BaseCli):
     def delete(self, c_id):
-        self.run_command("clusters delete {}".format(c_id))
+        self.run_command(f"clusters delete {c_id}")
 
         self.log.info("Waiting for the cluster to be deleted")
-        deleted = self.wait_for_ready("cluster ls -q", c_id, condition_func=
-                                      lambda val, l: val not in l.splitlines())
-        return deleted
+        return self.wait_for_ready(
+            "cluster ls -q",
+            c_id,
+            condition_func=lambda val, l: val not in l.splitlines(),
+        )
 
 
 class NodeCli(BaseCli):
     def get(self):
         result = self.run_command(
             "nodes ls --format '{{.Name}}|{{.Node.IPAddress}}'").splitlines()
-        nodes = []
-        for n in result:
-            nodes.append({
-                "name": n.split("|")[0],
-                "ip": n.split("|")[1]
-            })
-        return nodes
+        return [{"name": n.split("|")[0], "ip": n.split("|")[1]} for n in result]
 
     def ssh(self, node, cmd, known=False, is_jenkins=False):
         if is_jenkins:
@@ -408,8 +409,7 @@ class NodeCli(BaseCli):
             tilde = '~'
         if not known:
             self.log.debug("Determining if host is already known")
-            known_hosts = os.path.expanduser(
-                "{}/.ssh/known_hosts".format(tilde))
+            known_hosts = os.path.expanduser(f"{tilde}/.ssh/known_hosts")
             with open(known_hosts) as file:
                 for line in file:
                     if node["ip"] in line:
@@ -419,10 +419,11 @@ class NodeCli(BaseCli):
             self.log.debug("Host is not known. Attempting to add it to file")
             try:
                 self.log.debug("Storing ecdsa key in known hosts")
-                subprocess.run("ssh-keyscan -t ecdsa {} >> {}"
-                               "/.ssh/known_hosts".format(node["ip"], tilde),
-                               shell=True, stderr=subprocess.PIPE)
+                subprocess.run(
+                    f'ssh-keyscan -t ecdsa {node["ip"]} >> {tilde}/.ssh/known_hosts',
+                    shell=True,
+                    stderr=subprocess.PIPE,
+                )
             except subprocess.CalledProcessError as e:
                 self.log.info("Error storing ecdsa key! Result: %s", e.stderr)
-        ssh_result = self.run_command('ssh {} "{}"'.format(node["name"], cmd))
-        return ssh_result
+        return self.run_command(f'ssh {node["name"]} "{cmd}"')

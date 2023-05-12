@@ -16,8 +16,8 @@ def test_system_app_creator(admin_mc, admin_system_pc, remove_resource):
                                              'secretKey': secret})
     remove_resource(globaldns_provider)
     app = wait_for_system_app(
-        admin_system_pc.client,
-        "systemapp-"+globaldns_provider.name)
+        admin_system_pc.client, f"systemapp-{globaldns_provider.name}"
+    )
     # the creator id of system app won't be listed in api
     assert app.creatorId != globaldns_provider.creatorId
 

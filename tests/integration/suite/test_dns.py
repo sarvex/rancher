@@ -55,12 +55,7 @@ def test_dns_hostname(admin_pc, admin_cc_client):
     assert 'namespace' not in dns_record
     assert dns_record.projectId == admin_pc.project.id
 
-    found = False
-    for i in client.list_dns_record():
-        if i.id == dns_record.id:
-            found = True
-            break
-
+    found = any(i.id == dns_record.id for i in client.list_dns_record())
     assert found
 
     dns_record = client.by_id_dns_record(dns_record.id)
@@ -110,12 +105,7 @@ def test_dns_ips(admin_pc, admin_cc_client):
                                  namespaceId='default')
     assert e.value.error.status == 422
 
-    found = False
-    for i in client.list_dns_record():
-        if i.id == dns_record.id:
-            found = True
-            break
-
+    found = any(i.id == dns_record.id for i in client.list_dns_record())
     assert found
 
     dns_record = client.by_id_dns_record(dns_record.id)

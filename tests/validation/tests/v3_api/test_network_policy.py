@@ -61,9 +61,7 @@ def test_connectivity_between_pods():
     validate_workload(p2_client, workload2, "daemonSet", ns2.name,
                       schedulable_node_count)
     check_connectivity_between_workload_pods(p2_client, workload2)
-    allow_connectivity = True
-    if PROJECT_ISOLATION == "enabled":
-        allow_connectivity = False
+    allow_connectivity = PROJECT_ISOLATION != "enabled"
     check_connectivity_between_workloads(
         p_client, workload, p2_client, workload2,
         allow_connectivity=allow_connectivity)

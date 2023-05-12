@@ -22,8 +22,5 @@ def test_cannot_create(admin_mc, user_mc, remove_resource):
 def test_can_list(admin_mc, user_mc, remove_resource):
     user_client = user_mc.client
     user_client.list_feature()
-    assert True
-
     admin_client = admin_mc.client
     admin_client.list_feature()
-    assert True

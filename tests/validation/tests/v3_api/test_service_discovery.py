@@ -104,11 +104,9 @@ def validate_dns_record_for_workload(workload, scale, record,
     if testclient_pods is None:
         testclient_pods = namespace["testclient_pods"]
 
-    expected_ips = []
     pods = p_client.list_pod(workloadId=workload["id"]).data
     assert len(pods) == scale
-    for pod in pods:
-        expected_ips.append(pod["status"]["podIp"])
+    expected_ips = [pod["status"]["podIp"] for pod in pods]
     for pod in testclient_pods:
         validate_dns_record(pod, record, expected_ips)
 
@@ -347,11 +345,8 @@ def test_dns_record_type_workload():
     record = {"type": "dnsRecord", "targetWorkloadIds": [workload["id"]],
               "name": random_test_name("record"), "namespaceId": ns.id}
 
-    expected_ips = []
     pods = p_client.list_pod(workloadId=workload["id"]).data
-    for pod in pods:
-        expected_ips.append(pod["status"]["podIp"])
-
+    expected_ips = [pod["status"]["podIp"] for pod in pods]
     create_and_validate_dns_record(record, expected_ips)
 
 
@@ -383,9 +378,7 @@ def test_dns_record_type_multiple_workloads():
 
     for wl in workloads:
         pods = p_client.list_pod(workloadId=wl["id"]).data
-        for pod in pods:
-            expected_ips.append(pod["status"]["podIp"])
-
+        expected_ips.extend(pod["status"]["podIp"] for pod in pods)
     create_and_validate_dns_record(record, expected_ips)
 
 
@@ -402,11 +395,8 @@ def test_dns_record_type_selector():
                   {"workload.user.cattle.io/workloadselector": selector},
               "name": random_test_name("record"), "namespaceId": ns.id}
 
-    expected_ips = []
     pods = p_client.list_pod(workloadId=workload["id"]).data
-    for pod in pods:
-        expected_ips.append(pod["status"]["podIp"])
-
+    expected_ips = [pod["status"]["podIp"] for pod in pods]
     create_and_validate_dns_record(record, expected_ips)
 
 
@@ -526,9 +516,11 @@ def create_dns_record(record, p_client=None):
     created_record = p_client.create_dns_record(record)
 
     wait_for_condition(
-        p_client, created_record,
+        p_client,
+        created_record,
         lambda x: x.state == "active",
-        lambda x: 'State is: ' + x.state)
+        lambda x: f'State is: {x.state}',
+    )
 
     return created_record
 

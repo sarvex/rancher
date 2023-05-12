@@ -55,12 +55,7 @@ def test_namespaced_secrets(admin_pc, admin_cc_client):
     assert 'namespace' not in secret.data
     assert secret.projectId == admin_pc.project.id
 
-    found = False
-    for i in client.list_namespaced_secret():
-        if i.id == secret.id:
-            found = True
-            break
-
+    found = any(i.id == secret.id for i in client.list_namespaced_secret())
     assert found
 
     client.delete(secret)
@@ -97,12 +92,7 @@ def test_namespaced_certificates(admin_pc, admin_cc_client):
     assert cert.namespaceId == ns.id
     assert cert.projectId == admin_pc.project.id
 
-    found = False
-    for i in client.list_namespaced_certificate():
-        if i.id == cert.id:
-            found = True
-            break
-
+    found = any(i.id == cert.id for i in client.list_namespaced_certificate())
     assert found
 
     cert = client.by_id_namespaced_certificate(cert.id)
@@ -150,12 +140,9 @@ def test_namespaced_docker_credential(admin_pc, admin_cc_client):
     assert 'namespace' not in cert
     assert cert.projectId == admin_pc.project.id
 
-    found = False
-    for i in client.list_namespaced_docker_credential():
-        if i.id == cert.id:
-            found = True
-            break
-
+    found = any(
+        i.id == cert.id for i in client.list_namespaced_docker_credential()
+    )
     assert found
 
     cert = client.by_id_namespaced_docker_credential(cert.id)
@@ -196,12 +183,7 @@ def test_namespaced_basic_auth(admin_pc, admin_cc_client):
     assert 'namespace' not in cert
     assert cert.projectId == admin_pc.project.id
 
-    found = False
-    for i in client.list_namespaced_basic_auth():
-        if i.id == cert.id:
-            found = True
-            break
-
+    found = any(i.id == cert.id for i in client.list_namespaced_basic_auth())
     assert found
 
     cert = client.by_id_namespaced_basic_auth(cert.id)
@@ -238,12 +220,7 @@ def test_namespaced_ssh_auth(admin_pc, admin_cc_client):
     assert 'namespace' not in cert
     assert cert.projectId == admin_pc.project.id
 
-    found = False
-    for i in client.list_namespaced_ssh_auth():
-        if i.id == cert.id:
-            found = True
-            break
-
+    found = any(i.id == cert.id for i in client.list_namespaced_ssh_auth())
     assert found
 
     cert = client.by_id_namespaced_ssh_auth(cert.id)

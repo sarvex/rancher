@@ -76,10 +76,7 @@ def test_global_catalog_template_access(admin_mc, user_factory,
                 "Timed out waiting for catalog to stop transitioning")
 
     existing = client.list_template(catalogId="library").data
-    templates = []
-    for t in existing:
-        templates.append("library-" + t.name)
-
+    templates = [f"library-{t.name}" for t in existing]
     url = "https://github.com/mrajashree/charts.git"
     catalog = client.create_catalog(name=name,
                                     branch="onlyOne",
@@ -102,9 +99,7 @@ def test_global_catalog_template_access(admin_mc, user_factory,
 
     # Now list all templates of this catalog
     new_templates = client.list_template(catalogId=name).data
-    for t in new_templates:
-        templates.append(name + "-" + t.name)
-
+    templates.extend(f"{name}-{t.name}" for t in new_templates)
     all_templates = existing + new_templates
     # User should be able to list all these templates
     user_client = user1.client
@@ -182,7 +177,7 @@ def test_relative_paths(admin_mc, admin_pc, remove_resource):
     and ensures that rancher can resolve the relative url"""
 
     client = admin_mc.client
-    catalogname = "cat-" + random_str()
+    catalogname = f"cat-{random_str()}"
     url = "https://raw.githubusercontent.com/rancher/integration-test-charts"\
         "/relative-path"
     catalog = client.create_catalog(catalogName=catalogname, branch="master",
@@ -194,18 +189,18 @@ def test_relative_paths(admin_mc, admin_pc, remove_resource):
 
     # now deploy the app in the catalog to ensure we can resolve the tarball
     ns = admin_pc.cluster.client.create_namespace(
-        catalogName="ns-" + random_str(),
-        projectId=admin_pc.project.id)
+        catalogName=f"ns-{random_str()}", projectId=admin_pc.project.id
+    )
     remove_resource(ns)
 
     wait_for_template_to_be_created(client, catalog.id)
-    mysqlha = admin_pc.client.create_app(name="app-" + random_str(),
-                                         externalId="catalog://?catalog=" +
-                                                    catalog.id +
-                                                    "&template=mysql"
-                                                    "&version=1.6.2",
-                                         targetNamespace=ns.name,
-                                         projectId=admin_pc.project.id)
+    mysqlha = admin_pc.client.create_app(
+        name=f"app-{random_str()}",
+        externalId="catalog://?catalog=" + catalog.id + "&template=mysql"
+        "&version=1.6.2",
+        targetNamespace=ns.name,
+        projectId=admin_pc.project.id,
+    )
     remove_resource(mysqlha)
     wait_for_atleast_workload(pclient=admin_pc.client, nsid=ns.id, timeout=60,
                               count=1)
@@ -301,9 +296,8 @@ def test_invalid_catalog_chart_names(admin_mc, remove_resource):
 
     def get_errored_catalog(catalog):
         catalog = client.reload(catalog)
-        if catalog.transitioning == "error":
-            return catalog
-        return None
+        return catalog if catalog.transitioning == "error" else None
+
     catalog = wait_for(lambda: get_errored_catalog(catalog),
                        fail_handler=lambda:
                        "catalog was not found in error state")
@@ -337,9 +331,8 @@ def test_invalid_catalog_chart_urls(admin_mc, remove_resource):
 
     def get_errored_catalog(catalog):
         catalog = client.reload(catalog)
-        if catalog.transitioning == "error":
-            return catalog
-        return None
+        return catalog if catalog.transitioning == "error" else None
+
     catalog = wait_for(lambda: get_errored_catalog(catalog),
                        fail_handler=lambda:
                        "catalog was not found in error state")

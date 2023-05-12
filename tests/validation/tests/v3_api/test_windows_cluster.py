@@ -58,10 +58,8 @@ def test_windows_provisioning_gw_host():
 
 
 def pull_images(node):
-    print("Pulling images on node: " + node.host_name)
-    pull_result = node.execute_command("docker pull " + TEST_IMAGE
-                                       + " && " +
-                                       "docker pull " + TEST_IMAGE_NGINX
-                                       + " && " +
-                                       "docker pull " + TEST_IMAGE_OS_BASE)
+    print(f"Pulling images on node: {node.host_name}")
+    pull_result = node.execute_command(
+        f"docker pull {TEST_IMAGE} && docker pull {TEST_IMAGE_NGINX} && docker pull {TEST_IMAGE_OS_BASE}"
+    )
     print(pull_result)

@@ -642,8 +642,8 @@ def validate_workload_with_secret(p_client, workload,
     for i in range(0, len(keyvaluepair)):
         key = list(keyvaluepair.keys())[i]
         if workloadwithsecretasVolume:
-            key_file_in_pod = mountpath + "/" + key
-            command = "cat " + key_file_in_pod + ''
+            key_file_in_pod = f"{mountpath}/{key}"
+            command = f"cat {key_file_in_pod}"
             if is_windows():
                 command = 'powershell -NoLogo -NonInteractive -Command "& {{ cat {0} }}"'.format(key_file_in_pod)
             result = kubectl_pod_exec(pod_list[0], command)
@@ -655,7 +655,7 @@ def validate_workload_with_secret(p_client, workload,
                           '% { "$_=$((Get-Item -Path Env:\\$_).Value)" }}\''
             result = kubectl_pod_exec(pod_list[0], command)
             if base64.b64decode(list(keyvaluepair.values())[i]) in result:
-                assert True
+                pass
 
 
 def delete_secret(client, secret, ns, keyvaluepair):
@@ -667,7 +667,6 @@ def delete_secret(client, secret, ns, keyvaluepair):
 
     # Sleep to allow for the secret to be deleted
     time.sleep(5)
-    timeout = 30
     print("Secret list after deleting secret")
     secretdict = client.list_secret(name=secretname)
     print(secretdict)
@@ -677,16 +676,15 @@ def delete_secret(client, secret, ns, keyvaluepair):
         testdata = secretdict.get('data')
         print("TESTDATA")
         print(testdata[0]['data'])
+        timeout = 30
         while key in testdata[0]['data']:
             if time.time() - start > timeout:
                 raise AssertionError("Timed out waiting for deletion")
             time.sleep(.5)
             secretdict = client.list_secret(name=secretname)
             testdata = secretdict.get('data')
-        assert True
     if len(secretdict.get('data')) == 0:
-        assert True
-
+        pass
     # Verify secret is deleted by "kubectl get secret" command
     command = " get secret " + secret['name'] + " --namespace=" + ns.name
     print("Command to obtain the secret")
@@ -696,8 +694,6 @@ def delete_secret(client, secret, ns, keyvaluepair):
 
     print("Verify that the secret does not exist "
           "and the error code returned is non zero ")
-    if result != 0:
-        assert True
 
 
 def create_and_validate_workload_with_secret_as_volume(p_client, secret, ns,

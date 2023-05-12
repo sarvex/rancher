@@ -12,13 +12,12 @@ def exec_kubectl(request, dind_cc, client, cmd='api-resources'):
     # verify cluster scoped access
     try:
         return subprocess.check_output(
-            'kubectl ' + cmd +
-            ' --kubeconfig ' + cluster_kubeconfig_file +
-            ' --context ' + dind_cc.name + '-fqdn',
-            stderr=subprocess.STDOUT, shell=True,
+            f'kubectl {cmd} --kubeconfig {cluster_kubeconfig_file} --context {dind_cc.name}-fqdn',
+            stderr=subprocess.STDOUT,
+            shell=True,
         )
     except subprocess.CalledProcessError as err:
-        print('kubectl error: ' + str(err.output))
+        print(f'kubectl error: {str(err.output)}')
         raise err
 
 
@@ -60,8 +59,8 @@ def test_user_with_template(request, dind_cc, user_mc):
     test_user_no_template(request, dind_cc, user_mc)
     role_template = {
         'clusterId': dind_cc.cluster.id,
-        'userPrincipalId': 'local://' + user_mc.user.id,
-        'roleTemplateId': 'cluster-member'
+        'userPrincipalId': f'local://{user_mc.user.id}',
+        'roleTemplateId': 'cluster-member',
     }
     dind_cc.admin_mc.client.create_clusterRoleTemplateBinding(role_template)
     wait_for(kubectl_available(request, dind_cc, user_mc.client))

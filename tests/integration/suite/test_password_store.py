@@ -157,14 +157,14 @@ def checkSecrets(crdClient, k8sclient, ns, name, fs, client, func):
     servers = k8fs['spec']['fluentForwarderConfig']['fluentServers']
 
     secretNames = []
-    for ind, server in enumerate(servers):
+    for server in servers:
         secretName = server['password']
         ns, name = secretName.split(":")
         secretNames.append(name)
 
     func(client, fs)
 
-    for secretName in secretNames:
+    for _ in secretNames:
         try:
             k8sclient.read_namespaced_secret(name, globalNS)
         except ApiException as e:

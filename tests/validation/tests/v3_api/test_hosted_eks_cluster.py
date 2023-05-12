@@ -195,7 +195,7 @@ def create_resources_eks():
     """
     Create an EKS cluster from the EKS console
     """
-    cluster_name = resource_prefix + "-ekscluster"
+    cluster_name = f"{resource_prefix}-ekscluster"
     AmazonWebServices().create_eks_cluster(cluster_name)
     IMPORTED_EKS_CLUSTERS.append(cluster_name)
     AmazonWebServices().wait_for_eks_cluster_state(cluster_name, "ACTIVE")
@@ -225,11 +225,11 @@ def create_and_validate_eks_cluster(cluster_config, imported=False):
     """
     client = get_user_client()
     print("Creating EKS cluster")
-    print("\nEKS Configuration: {}".format(cluster_config))
+    print(f"\nEKS Configuration: {cluster_config}")
     cluster = client.create_cluster(cluster_config)
     print(cluster)
     cluster_details[cluster["name"]] = cluster
-    intermediate_state = False if imported else True
+    intermediate_state = not imported
     cluster = validate_cluster(client, cluster,
                                check_intermediate_state=intermediate_state,
                                skipIngresscheck=True,
@@ -247,10 +247,9 @@ def get_aws_cloud_credential():
         "accessKey": EKS_ACCESS_KEY,
         "secretKey": EKS_SECRET_KEY
     }
-    ec2_cloud_credential = client.create_cloud_credential(
+    return client.create_cloud_credential(
         amazonec2credentialConfig=ec2_cloud_credential_config
     )
-    return ec2_cloud_credential
 
 
 def get_logging_types():
@@ -261,8 +260,7 @@ def get_logging_types():
     logging_types = []
     if LOGGING_TYPES is not None:
         temp = LOGGING_TYPES.split(",")
-        for logging in temp:
-            logging_types.append(logging)
+        logging_types.extend(iter(temp))
     return logging_types
 
 
@@ -320,7 +318,7 @@ def get_new_node():
     Create a new node group
     :return: new_nodegroup
     """
-    new_nodegroup = {
+    return {
         "desiredSize": EKS_NODESIZE,
         "diskSize": 20,
         "gpu": False,
@@ -329,9 +327,8 @@ def get_new_node():
         "minSize": EKS_NODESIZE,
         "nodegroupName": random_test_name("test-ng"),
         "ec2SshKey": AWS_SSH_KEY_NAME.split(".pem")[0],
-        "type": "nodeGroup"
+        "type": "nodeGroup",
     }
-    return new_nodegroup
 
 
 def validate_eks_cluster(cluster_name, eks_config_temp):
@@ -342,8 +339,7 @@ def validate_eks_cluster(cluster_name, eks_config_temp):
     :return:
     """
     eks_cluster = AmazonWebServices().describe_eks_cluster(cluster_name)
-    print("\nEKS cluster deployed in EKS Console: {}".
-          format(eks_cluster["cluster"]))
+    print(f'\nEKS cluster deployed in EKS Console: {eks_cluster["cluster"]}')
 
     # check k8s version
     assert eks_cluster["cluster"]["version"] == \
@@ -422,7 +418,7 @@ def validate_nodegroup(nodegroup_list, cluster_name):
         eks_nodegroup = AmazonWebServices().describe_eks_nodegroup(
             cluster_name, nodegroup["nodegroupName"]
         )
-        print("\nNode Group from EKS console: {}".format(eks_nodegroup))
+        print(f"\nNode Group from EKS console: {eks_nodegroup}")
 
         # k8s version check
         eks_cluster = AmazonWebServices().describe_eks_cluster(cluster_name)

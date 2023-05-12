@@ -41,10 +41,7 @@ EKS_ROLE_ARN = os.environ.get("RANCHER_EKS_ROLE_ARN")
 EKS_WORKER_ROLE_ARN = os.environ.get("RANCHER_EKS_WORKER_ROLE_ARN")
 
 AWS_SUBNETS = []
-if ',' in AWS_SUBNET:
-    AWS_SUBNETS = AWS_SUBNET.split(',')
-else:
-    AWS_SUBNETS = [AWS_SUBNET]
+AWS_SUBNETS = AWS_SUBNET.split(',') if ',' in AWS_SUBNET else [AWS_SUBNET]
 
 
 class AmazonWebServices(CloudProviderBase):
@@ -175,7 +172,7 @@ class AmazonWebServices(CloudProviderBase):
                               public_ip=True):
         nodes = []
         for i in range(number_of_nodes):
-            node_name = "{}-{}".format(node_name_prefix, i)
+            node_name = f"{node_name_prefix}-{i}"
             nodes.append(self.create_node(node_name,
                                           ami=ami, ssh_user=ssh_user,
                                           key_name=key_name,
@@ -189,7 +186,7 @@ class AmazonWebServices(CloudProviderBase):
                 time.sleep(60 * 6)
                 for node in nodes:
                     node.ssh_password = \
-                        self.decrypt_windows_password(node.provider_node_id)
+                            self.decrypt_windows_password(node.provider_node_id)
 
             if public_ip:
                 for node in nodes:
@@ -223,8 +220,7 @@ class AmazonWebServices(CloudProviderBase):
                 node.ssh_key = self.master_ssh_key
             return node
         except Boto3Error as e:
-            msg = "Failed while querying instance '{}' state!: {}".format(
-                node.node_id, str(e))
+            msg = f"Failed while querying instance '{node.node_id}' state!: {str(e)}"
             raise RuntimeError(msg)
 
     def update_node(self, node):
@@ -243,8 +239,7 @@ class AmazonWebServices(CloudProviderBase):
             node.private_ip_address = aws_node.get('PrivateIpAddress')
             return node
         except Boto3Error as e:
-            msg = "Failed while querying instance '{}' state!: {}".format(
-                node.node_id, str(e))
+            msg = f"Failed while querying instance '{node.node_id}' state!: {str(e)}"
             raise RuntimeError(msg)
 
     def start_node(self, node, wait_for_start=True):
@@ -277,17 +272,16 @@ class AmazonWebServices(CloudProviderBase):
     def delete_eks_cluster(self, cluster_name):
         ng_names = self._eks_client.list_nodegroups(clusterName=cluster_name)
         for node_group in ng_names['nodegroups']:
-            print("Deleting node group: " + node_group)
+            print(f"Deleting node group: {node_group}")
             delete_ng_response = self._eks_client.delete_nodegroup(
                                                     clusterName=cluster_name,
                                                     nodegroupName=node_group)
         waiter_ng = self._eks_client.get_waiter('nodegroup_deleted')
         for node_group in ng_names['nodegroups']:
-            print("Waiting for deletion of: " + node_group)
+            print(f"Waiting for deletion of: {node_group}")
             waiter_ng.wait(clusterName=cluster_name, nodegroupName=node_group)
-        print("Deleting cluster: "+ cluster_name)
-        delete_response = self._eks_client.delete_cluster(name=cluster_name)
-        return delete_response
+        print(f"Deleting cluster: {cluster_name}")
+        return self._eks_client.delete_cluster(name=cluster_name)
 
     def wait_for_node_state(self, node, state='running'):
         # 'running', 'stopped', 'terminated'
@@ -347,7 +341,7 @@ class AmazonWebServices(CloudProviderBase):
                 ret_nodes.append(node)
             return ret_nodes
         except Boto3Error as e:
-            msg = "Failed while getting instances: {}".format(str(e))
+            msg = f"Failed while getting instances: {str(e)}"
             raise RuntimeError(msg)
 
     def delete_nodes(self, nodes, wait_for_deleted=False):
@@ -406,16 +400,15 @@ class AmazonWebServices(CloudProviderBase):
 
     def deregister_all_targets(self, target_group_arn):
         target_health_descriptions = \
-            self.describe_target_health(target_group_arn)
+                self.describe_target_health(target_group_arn)
 
         if len(target_health_descriptions["TargetHealthDescriptions"]) > 0:
-            targets = []
-
-            for target in \
-                    target_health_descriptions["TargetHealthDescriptions"]:
-                target_obj = target["Target"]
-                targets.append(target_obj)
-
+            targets = [
+                target["Target"]
+                for target in target_health_descriptions[
+                    "TargetHealthDescriptions"
+                ]
+            ]
             self._elbv2_client.deregister_targets(
                 TargetGroupArn=target_group_arn,
                 Targets=targets)
@@ -510,12 +503,12 @@ class AmazonWebServices(CloudProviderBase):
 
     def decrypt_windows_password(self, instance_id):
         password = ""
-        password_data = self._client. \
-            get_password_data(InstanceId=instance_id)['PasswordData']
-        if password_data:
+        if password_data := self._client.get_password_data(InstanceId=instance_id)[
+            'PasswordData'
+        ]:
             password = base64.b64decode(password_data)
             with open(self.get_ssh_key_path(AWS_SSH_KEY_NAME), 'r') \
-                    as privkeyfile:
+                        as privkeyfile:
                 priv = rsa.PrivateKey.load_pkcs1(privkeyfile.read())
                 password = rsa.decrypt(password, priv).decode('utf-8')
 
@@ -526,11 +519,9 @@ class AmazonWebServices(CloudProviderBase):
             'Name': 'attachment.instance-id', 'Values': [provider_node_id]}]
         try:
             response = self._client.describe_volumes(Filters=node_filter)
-            volumes = response.get('Volumes', [])
-            return volumes
+            return response.get('Volumes', [])
         except (Boto3Error, RuntimeError) as e:
-            msg = "Failed while querying instance '{}' volumes!: {}".format(
-                provider_node_id, str(e))
+            msg = f"Failed while querying instance '{provider_node_id}' volumes!: {str(e)}"
             raise RuntimeError(msg)
 
     def get_security_group_name(self, security_group_id):
@@ -542,9 +533,7 @@ class AmazonWebServices(CloudProviderBase):
             if len(security_groups) > 0:
                 return security_groups[0]['GroupName']
         except Boto3Error as e:
-            msg = "Failed while querying security group name for '{}' " \
-                  "in region {}: {}".format(security_group_id,
-                                            AWS_REGION, str(e))
+            msg = f"Failed while querying security group name for '{security_group_id}' in region {AWS_REGION}: {str(e)}"
             raise RuntimeError(msg)
 
     def get_target_groups(self, lb_arn):
@@ -555,9 +544,10 @@ class AmazonWebServices(CloudProviderBase):
         except ClientError:
             return tg_list
         if res is not None:
-            for item in res["Listeners"]:
-                tg_arn = item["DefaultActions"][0]["TargetGroupArn"]
-                tg_list.append(tg_arn)
+            tg_list.extend(
+                item["DefaultActions"][0]["TargetGroupArn"]
+                for item in res["Listeners"]
+            )
         return tg_list
 
     def get_lb(self, name):
@@ -585,7 +575,7 @@ class AmazonWebServices(CloudProviderBase):
 
     def create_eks_cluster(self, name):
         kubeconfig_path = self.create_eks_controlplane(name)
-        self.create_eks_nodegroup(name, '{}-ng'.format(name))
+        self.create_eks_nodegroup(name, f'{name}-ng')
         return kubeconfig_path
 
     def create_eks_controlplane(self, name):
@@ -649,8 +639,7 @@ class AmazonWebServices(CloudProviderBase):
         status = cluster['status']
         while status != target_state:
             if time.time() - start > timeout:
-                raise AssertionError(
-                    "Timed out waiting for state to get to " + target_state)
+                raise AssertionError(f"Timed out waiting for state to get to {target_state}")
 
             time.sleep(5)
             cluster = self.describe_eks_cluster(name)['cluster']
@@ -662,14 +651,13 @@ class AmazonWebServices(CloudProviderBase):
         ng_names = self._eks_client.list_nodegroups(clusterName=cluster_name)
         waiter_ng = self._eks_client.get_waiter('nodegroup_deleted')
         for node_group in ng_names['nodegroups']:
-            print ("Waiting for deletion of nodegroup: {}".format(node_group))
+            print(f"Waiting for deletion of nodegroup: {node_group}")
             waiter_ng.wait(clusterName=cluster_name, nodegroupName=node_group)
-        print ("Waiting for deletion of cluster: {}".format(cluster_name))
+        print(f"Waiting for deletion of cluster: {cluster_name}")
         waiter = self._eks_client.get_waiter('cluster_deleted')
         waiter.wait(name=cluster_name)
 
     def disable_source_dest_check(self, instance_id):
-        response = self._client.modify_instance_attribute(
-                    SourceDestCheck={'Value': False},
-                    InstanceId=instance_id)
-        return response
+        return self._client.modify_instance_attribute(
+            SourceDestCheck={'Value': False}, InstanceId=instance_id
+        )

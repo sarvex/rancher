@@ -70,8 +70,7 @@ def test_clusters_for_kdm():
                 node_count, random_test_name(HOST_NAME))
         i = 0
         for network_plugin in network_plugins:
-            if network_plugin == "calico" or \
-                    network_plugin == "canal" or network_plugin == "weave":
+            if network_plugin in ["calico", "canal", "weave"]:
                 rke_config_new["network"]["options"] = \
                     {"flannel_backend_type": "vxlan"}
             rke_config_new["network"] = {"type": "networkConfig",
@@ -108,19 +107,18 @@ def test_clusters_for_kdm():
     for process in list_process:
         process.join()
     # setting environment variables
-    env_details = "env.CATTLE_TEST_URL='" + CATTLE_TEST_URL + "'\n"
-    env_details += "env.ADMIN_TOKEN='" + ADMIN_TOKEN + "'\n"
-    env_details += "env.USER_TOKEN='" + USER_TOKEN + "'\n"
+    env_details = f"env.CATTLE_TEST_URL='{CATTLE_TEST_URL}" + "'\n"
+    env_details += f"env.ADMIN_TOKEN='{ADMIN_TOKEN}" + "'\n"
+    env_details += f"env.USER_TOKEN='{USER_TOKEN}" + "'\n"
     names = ""
     i = 0
     for cluster in CLUSTER_LIST:
-        env_details += \
-            "env.CLUSTER_NAME_" + str(i) + "='" + cluster.name + "'\n"
-        names += cluster.name + ","
+        env_details += f"env.CLUSTER_NAME_{str(i)}='{cluster.name}" + "'\n"
+        names += f"{cluster.name},"
         i = i + 1
     create_config_file(env_details)
     print("env_details:", env_details)
-    print("list of cluster names: " + names[:-1])
+    print(f"list of cluster names: {names[:-1]}")
     client = get_user_client()
     for cluster in CLUSTER_LIST:
         try:
@@ -129,7 +127,7 @@ def test_clusters_for_kdm():
             passed_cluster = save_cluster_details(passed_cluster, cluster)
 
         except Exception as e:
-            print("Issue in {}:\n{}".format(cluster.name, e))
+            print(f"Issue in {cluster.name}:\n{e}")
             # details of cluster that have failed
             failed_cluster = save_cluster_details(failed_cluster, cluster)
 
@@ -137,25 +135,24 @@ def test_clusters_for_kdm():
     print("--------------Passed Cluster information--------------'\n")
     print("Clusters: " + ''.join('{0},'.format(key) for key, value in passed_cluster.items()))
     for key, value in passed_cluster.items():
-        print(key + "-->" + str(value) + "\n")
+        print(f"{key}-->{str(value)}" + "\n")
     print("--------------Failed Cluster information--------------'\n")
     for key, value in failed_cluster.items():
-        print(key + "-->" + str(value) + "\n")
+        print(f"{key}-->{str(value)}" + "\n")
     assert len(failed_cluster) == 0, "Clusters have failed to provision. " \
                                      "Check logs for more info"
 
 
 def validate_custom_cluster_kdm(cluster, aws_nodes):
-    if NODE_COUNT_KDM_CLUSTER == 4:
-        node_roles = [["controlplane"], ["etcd"], ["worker"], ["worker"]]
-    elif NODE_COUNT_KDM_CLUSTER == 2:
+    if NODE_COUNT_KDM_CLUSTER == 2:
         node_roles = [["controlplane", "etcd", "worker"], ["worker"]]
+    elif NODE_COUNT_KDM_CLUSTER == 4:
+        node_roles = [["controlplane"], ["etcd"], ["worker"], ["worker"]]
     else:
         node_roles = [["worker", "controlplane", "etcd"]]
     client = get_user_client()
     assert cluster.state == "provisioning"
-    i = 0
-    for aws_node in aws_nodes:
+    for i, aws_node in enumerate(aws_nodes):
         docker_run_cmd = \
             get_custom_host_registration_cmd(client,
                                              cluster,
@@ -164,14 +161,11 @@ def validate_custom_cluster_kdm(cluster, aws_nodes):
         for nr in node_roles[i]:
             aws_node.roles.append(nr)
         aws_node.execute_command(docker_run_cmd)
-        i += 1
 
 
 def get_dns_rke_config(dns_provider, network_plugin, nodelocaldns):
-    dns_entry = dict()
-    dns_entry["dns"] = {"type": "dnsConfig",
-                        "provider": dns_provider}
-    cluster_options = network_plugin + "-" + dns_provider
+    dns_entry = {"dns": {"type": "dnsConfig", "provider": dns_provider}}
+    cluster_options = f"{network_plugin}-{dns_provider}"
     if nodelocaldns:
         dns_entry["dns"]["nodelocal"] = \
             {"type": "nodelocal", "ipAddress": "169.254.20.10"}

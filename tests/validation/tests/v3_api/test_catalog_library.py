@@ -62,7 +62,7 @@ def test_catalog_app_deploy(app_name, app_version):
                                 answers=answer)
         validate_catalog_app(project_client, app, app_ext_id, answer)
     except (AssertionError, RuntimeError):
-        assert False, "App {} deployment/Validation failed.".format(app_name)
+        assert False, f"App {app_name} deployment/Validation failed."
     finally:
         project_client.delete(app)
         validate_app_deletion(project_client, app.id)

@@ -32,16 +32,14 @@ class DigitalOcean(CloudProviderBase):
 
         if DO_SSH_KEY_NAME:
             self.master_ssh_private_key = self.get_ssh_key(DO_SSH_KEY_NAME)
-            self.master_ssh_public_key = self.get_ssh_key(
-                DO_SSH_KEY_NAME + '.pub')
+            self.master_ssh_public_key = self.get_ssh_key(f'{DO_SSH_KEY_NAME}.pub')
             self.master_ssh_private_key_path = self.get_ssh_key_path(
                 DO_SSH_KEY_NAME)
 
     def _select_ami(self, os_version=None, docker_version=None):
         os_version = os_version or self.OS_VERSION
         docker_version = docker_version or self.DOCKER_VERSION
-        image = PRIVATE_IMAGES[
-            "{}-docker-{}".format(os_version, docker_version)]
+        image = PRIVATE_IMAGES[f"{os_version}-docker-{docker_version}"]
         return image['image'], image['ssh_user']
 
     def create_node(
@@ -91,7 +89,7 @@ class DigitalOcean(CloudProviderBase):
 
         nodes = []
         for i in range(number_of_nodes):
-            node_name = "{}_{}".format(node_name_prefix, i)
+            node_name = f"{node_name_prefix}_{i}"
             nodes.append(self.create_node(
                 node_name, key_name=key_name, os_version=os_version,
                 docker_version=docker_version, wait_for_ready=False))
@@ -104,13 +102,13 @@ class DigitalOcean(CloudProviderBase):
 
     def get_node(self, provider_id):
         droplet = self._manager.get_droplet(provider_id)
-        node = Node(
+        return Node(
             provider_node_id=droplet.id,
             node_name=droplet.name,
             ip_address=droplet.ip_address,
             state=droplet.status,
-            labels=droplet.tags)
-        return node
+            labels=droplet.tags,
+        )
 
     def stop_node(self, node, wait_for_stopped=False):
         droplet = self._manager.get_droplet(node.provider_node_id)

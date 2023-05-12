@@ -55,15 +55,15 @@ def test_deploy_rke():
     for k8s_version in default_k8s_versions:
         if env_details != "env.RANCHER_CLUSTER_NAMES='":
             env_details += ","
-        print("Deploying RKE Cluster using kubernetes version {}".format(
-            k8s_version))
+        print(f"Deploying RKE Cluster using kubernetes version {k8s_version}")
         node_roles = [["controlplane"], ["etcd"],
                       ["worker"], ["worker"], ["worker"]]
         cluster, aws_nodes = create_and_validate_custom_host(
             node_roles, random_cluster_name=True, version=k8s_version)
         env_details += cluster.name
-        print("Successfully deployed {} with kubernetes version {}".format(
-            cluster.name, k8s_version))
+        print(
+            f"Successfully deployed {cluster.name} with kubernetes version {k8s_version}"
+        )
         cluster_details["rke"][cluster.name] = k8s_version
 
 
@@ -85,8 +85,7 @@ def test_deploy_rke_import():
         if env_details != "env.RANCHER_CLUSTER_NAMES='":
             env_details += ","
         try:
-            print("Deploying RKE import Cluster using kubernetes version {}".
-                  format(version))
+            print(f"Deploying RKE import Cluster using kubernetes version {version}")
             client, cluster, \
                 aws_nodes = \
                 create_and_validate_import_cluster(version, supportmatrix=True)
@@ -110,8 +109,7 @@ def test_deploy_eks():
         if env_details != "env.RANCHER_CLUSTER_NAMES='":
             env_details += ","
         try:
-            print("Deploying EKS Cluster using kubernetes version {}".format(
-                version))
+            print(f"Deploying EKS Cluster using kubernetes version {version}")
             client, cluster = create_and_validate_eks_cluster(version)
             env_details += cluster.name
             cluster_details["eks"][cluster.name] = version
@@ -130,12 +128,11 @@ def test_deploy_gke():
     gke_versions, creds = get_gke_version_credentials(multiple_versions=True)
 
     for i, version in enumerate(gke_versions, start=1):
-        c_name = "test-auto-gke-{}".format(i)
+        c_name = f"test-auto-gke-{i}"
         if env_details != "env.RANCHER_CLUSTER_NAMES='":
             env_details += ","
         try:
-            print("Deploying GKE Cluster using kubernetes version {}".format(
-                version))
+            print(f"Deploying GKE Cluster using kubernetes version {version}")
             client, cluster = create_and_validate_gke_cluster(c_name,
                                                               version, creds)
             env_details += cluster.name
@@ -158,8 +155,7 @@ def test_deploy_aks():
         if env_details != "env.RANCHER_CLUSTER_NAMES='":
             env_details += ","
         try:
-            print("Deploying AKS Cluster using kubernetes version {}".format(
-                version))
+            print(f"Deploying AKS Cluster using kubernetes version {version}")
             client, cluster = create_and_validate_aks_cluster(version)
             env_details += cluster.name
             cluster_details["aks"][cluster.name] = version
@@ -181,11 +177,10 @@ def set_data(request):
         print("\n{}".format(env_details))
         print("\n Cluster Details")
         for cluster_type in cluster_details:
-            print(cluster_type + ": " + str(cluster_details[cluster_type]))
+            print(f"{cluster_type}: {str(cluster_details[cluster_type])}")
         for cluster_type in cluster_details:
             for cluster_name in cluster_details[cluster_type]:
-                print(cluster_type + " --> " +
-                      str(cluster_details[cluster_type][cluster_name]))
+                print(f"{cluster_type} --> {str(cluster_details[cluster_type][cluster_name])}")
         create_config_file(env_details)
 
     request.addfinalizer(fin)

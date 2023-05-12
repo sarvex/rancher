@@ -101,10 +101,7 @@ def create_and_validate_oke_cluster(name):
     client = get_user_client()
     print("Cluster creation")
     # Get the region
-    if OCI_REGION is None:
-        region = "us-phoenix-1"
-    else:
-        region = OCI_REGION
+    region = "us-phoenix-1" if OCI_REGION is None else OCI_REGION
     # Get the node shape
     if OKE_NODE_SHAPE is None:
         response = get_oci_meta_response("/meta/oci/nodeShapes", oci_cred_body)
@@ -185,16 +182,17 @@ def create_and_validate_oke_cluster(name):
 
 
 def get_oci_meta_response(endpoint, oci_cred_body):
-    headers = {"Content-Type": "application/json",
-               "Accept": "application/json",
-               "Authorization": "Bearer " + USER_TOKEN}
+    headers = {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "Authorization": f"Bearer {USER_TOKEN}",
+    }
 
     oke_version_url = CATTLE_TEST_URL + endpoint
 
-    response = requests.post(oke_version_url, json=oci_cred_body,
-                             verify=False, headers=headers)
-
-    return response
+    return requests.post(
+        oke_version_url, json=oci_cred_body, verify=False, headers=headers
+    )
 
 
 def get_ssh_key_contents(path):

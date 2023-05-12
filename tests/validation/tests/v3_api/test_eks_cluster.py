@@ -53,7 +53,7 @@ def get_eks_config(version):
     }
 
     if EKS_AMI is not None:
-        amazon_config.update({"ami": EKS_AMI})
+        amazon_config["ami"] = EKS_AMI
 
     # Generate the config for EKS cluster
     eks_config = {

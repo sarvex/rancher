@@ -22,7 +22,7 @@ def test_project_catalog_creation(admin_mc, remove_resource,
     project_owner_client = client
     name = random_str()
     project_name = str.lstrip(admin_pc.project.id, "local:")
-    catalog_name = project_name + ":" + name
+    catalog_name = f"{project_name}:{name}"
     url = "https://github.com/mrajashree/charts.git"
 
     project = admin_pc.project
@@ -112,7 +112,7 @@ def test_create_project_catalog_after_user_addition(admin_mc,
     # Create project-level catalog for this project as admin
     name = random_str()
     project_name = str.lstrip(admin_pc.project.id, "local:")
-    catalog_name = project_name + ":" + name
+    catalog_name = f"{project_name}:{name}"
     url = "https://github.com/mrajashree/charts.git"
 
     project = admin_pc.project
@@ -158,7 +158,7 @@ def test_user_addition_after_creating_project_catalog(admin_mc,
     client = admin_mc.client
     name = random_str()
     project_name = str.lstrip(admin_pc.project.id, "local:")
-    catalog_name = project_name + ":" + name
+    catalog_name = f"{project_name}:{name}"
     url = "https://github.com/mrajashree/charts.git"
 
     project = admin_pc.project
@@ -228,9 +228,9 @@ def test_project_catalog_access_before_app_creation(admin_mc, admin_pc,
     new_project = client.reload(new_project)
 
     project_name = str.lstrip(new_project.id, "local:")
-    catalog_name = project_name + ":" + name
     url = "https://github.com/rancher/integration-test-charts.git"
 
+    catalog_name = f"{project_name}:{name}"
     client.create_project_catalog(name=name,
                                   branch="master",
                                   url=url,
@@ -239,9 +239,7 @@ def test_project_catalog_access_before_app_creation(admin_mc, admin_pc,
     wait_for_projectcatalog_template_to_be_created(client,
                                                    catalog_name)
 
-    external_id = "catalog://?catalog="+project_name+"/"+name + \
-                  "&type=projectCatalog&template=chartmuseum" \
-                  "&version=1.6.0"
+    external_id = f"catalog://?catalog={project_name}/{name}&type=projectCatalog&template=chartmuseum&version=1.6.0"
 
     user = user_factory()
     # Add this user as project-owner

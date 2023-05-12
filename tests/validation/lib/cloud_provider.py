@@ -28,22 +28,22 @@ class CloudProviderBase(object, metaclass=abc.ABCMeta):
         raise NotImplementedError
 
     def save_master_key(self, ssh_key_name, ssh_key):
-        if not os.path.isfile('.ssh/{}'.format(ssh_key_name)):
+        if not os.path.isfile(f'.ssh/{ssh_key_name}'):
             run('mkdir -p .ssh')
-            with open('.ssh/{}'.format(ssh_key_name), 'w') as f:
+            with open(f'.ssh/{ssh_key_name}', 'w') as f:
                 f.write(ssh_key)
             run("chmod 0600 .ssh/{0}".format(ssh_key_name))
-            run("cat .ssh/{}".format(ssh_key_name))
+            run(f"cat .ssh/{ssh_key_name}")
 
     def generate_ssh_key(self, ssh_key_name, ssh_key_passphrase=''):
         try:
-            if not os.path.isfile('.ssh/{}'.format(ssh_key_name)):
-                run('mkdir -p .ssh && rm -rf .ssh/{}'.format(ssh_key_name))
+            if not os.path.isfile(f'.ssh/{ssh_key_name}'):
+                run(f'mkdir -p .ssh && rm -rf .ssh/{ssh_key_name}')
                 run("ssh-keygen -N '{1}' -C '{0}' -f .ssh/{0}".format(
                     ssh_key_name, ssh_key_passphrase))
                 run("chmod 0600 .ssh/{0}".format(ssh_key_name))
 
-            public_ssh_key = self.get_ssh_key(ssh_key_name + '.pub')
+            public_ssh_key = self.get_ssh_key(f'{ssh_key_name}.pub')
         except Exception as e:
             raise Exception("Failed to generate ssh key: {0}".format(e))
         return public_ssh_key
@@ -54,5 +54,4 @@ class CloudProviderBase(object, metaclass=abc.ABCMeta):
         return ssh_key
 
     def get_ssh_key_path(self, ssh_key_name):
-        key_path = os.path.abspath('.ssh/{}'.format(ssh_key_name))
-        return key_path
+        return os.path.abspath(f'.ssh/{ssh_key_name}')

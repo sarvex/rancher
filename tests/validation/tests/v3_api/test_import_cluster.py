@@ -41,20 +41,17 @@ def create_and_validate_import_cluster(k8s_version="", supportmatrix=False):
 
     # update clusterfilepath with k8s version
     if supportmatrix:
-        file_object = open(clusterfilepath, 'a')
-        version = "kubernetes_version: " + k8s_version
-        file_object.write(version)
-        # Close the file
-        file_object.close()
-
+        with open(clusterfilepath, 'a') as file_object:
+            version = f"kubernetes_version: {k8s_version}"
+            file_object.write(version)
     # Print config file to be used for rke cluster create
-    configfile = run_command("cat " + clusterfilepath)
+    configfile = run_command(f"cat {clusterfilepath}")
     print("RKE Config file generated:\n")
     print(configfile)
 
     # Create RKE K8s Cluster
     clustername = random_test_name("testimport")
-    rkecommand = "rke up --config {}".format(clusterfilepath)
+    rkecommand = f"rke up --config {clusterfilepath}"
     print(rkecommand)
     result = run_command_with_stderr(rkecommand)
     print("RKE up result: ", result)
@@ -65,9 +62,8 @@ def create_and_validate_import_cluster(k8s_version="", supportmatrix=False):
     cluster_token = create_custom_host_registration_token(client, cluster)
     command = cluster_token.insecureCommand
     print(command)
-    rke_config_file = "kube_config_" + cluster_filename + ".yml"
-    finalimportcommand = "{} --kubeconfig {}/{}".format(command, DATA_SUBDIR,
-                                                        rke_config_file)
+    rke_config_file = f"kube_config_{cluster_filename}.yml"
+    finalimportcommand = f"{command} --kubeconfig {DATA_SUBDIR}/{rke_config_file}"
     print("Final command to import cluster is:")
     print(finalimportcommand)
     result = run_command(finalimportcommand)
@@ -93,7 +89,7 @@ def test_generate_rke_config():
     # Create RKE config
     cluster_filename = random_test_name("cluster")
     rkeconfigpath = create_rke_cluster_config(aws_nodes, cluster_filename)
-    rkeconfig = run_command("cat " + rkeconfigpath)
+    rkeconfig = run_command(f"cat {rkeconfigpath}")
     print("RKE Config file generated\n")
     print(rkeconfig)
 
@@ -110,27 +106,24 @@ def create_rke_cluster_config(aws_nodes, cluster_filename):
     rkeconfig = readDataFile(DATA_SUBDIR, configfile)
     print(rkeconfig)
     for i in range(0, AWS_NODE_COUNT):
-        ipstring = "$ip" + str(i)
-        intipstring = "$intip" + str(i)
+        ipstring = f"$ip{str(i)}"
+        intipstring = f"$intip{str(i)}"
         rkeconfig = rkeconfig.replace(ipstring, aws_nodes[i].public_ip_address)
         rkeconfig = rkeconfig.replace(intipstring,
                                       aws_nodes[i].private_ip_address)
     rkeconfig = rkeconfig.replace("$AWS_SSH_KEY_NAME", AWS_SSH_KEY_NAME)
     rkeconfig = rkeconfig.replace("$KUBERNETES_VERSION", RKE_K8S_VERSION)
 
-    clusterfilepath = DATA_SUBDIR + "/" + cluster_filename + ".yml"
+    clusterfilepath = f"{DATA_SUBDIR}/{cluster_filename}.yml"
     print(clusterfilepath)
-    f = open(clusterfilepath, "w")
-    f.write(rkeconfig)
-    if AWS_NODE_COUNT > 3:
-        for i in range(3, AWS_NODE_COUNT):
-            for j in range(i, i + 1):
-                f.write("  - address: {}\n".format(
-                    aws_nodes[j].public_ip_address))
-                f.write("    internaladdress: {}\n".format(
-                    aws_nodes[j].private_ip_address))
-                f.write("    user: ubuntu\n")
-                f.write("    role: [worker]\n")
+    with open(clusterfilepath, "w") as f:
+        f.write(rkeconfig)
+        if AWS_NODE_COUNT > 3:
+            for i in range(3, AWS_NODE_COUNT):
+                for j in range(i, i + 1):
+                    f.write(f"  - address: {aws_nodes[j].public_ip_address}\n")
+                    f.write(f"    internaladdress: {aws_nodes[j].private_ip_address}\n")
+                    f.write("    user: ubuntu\n")
+                    f.write("    role: [worker]\n")
 
-    f.close()
     return clusterfilepath

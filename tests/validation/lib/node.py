@@ -101,11 +101,7 @@ class Node(object):
 
     def install_docker(self):
         # TODO: Fix to install native on RHEL 7.4
-        command = (
-            "{} && sudo usermod -aG docker {} && sudo systemctl enable docker"
-            .format(
-                DOCKER_INSTALL_CMD.format(self.docker_version),
-                self.ssh_user))
+        command = f"{DOCKER_INSTALL_CMD.format(self.docker_version)} && sudo usermod -aG docker {self.ssh_user} && sudo systemctl enable docker"
         return self.execute_command(command)
 
     def ready_node(self):

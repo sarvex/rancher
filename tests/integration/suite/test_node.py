@@ -80,9 +80,7 @@ def test_node_template_delete(admin_mc, remove_resource):
 
     def _wait_for_no_remove_link():
         nt = client.reload(node_template)
-        if not hasattr(nt.links, "remove"):
-            return True
-        return False
+        return not hasattr(nt.links, "remove")
 
     wait_for(_wait_for_no_remove_link)
 
@@ -101,9 +99,7 @@ def test_node_template_delete(admin_mc, remove_resource):
 
     def _wait_for_remove_link():
         nt = client.reload(node_template)
-        if hasattr(nt.links, "remove"):
-            return True
-        return False
+        return bool(hasattr(nt.links, "remove"))
 
     wait_for(_wait_for_remove_link)
 
@@ -144,10 +140,10 @@ def test_writing_config_to_disk(admin_mc, wait_remove_resource):
         digitaloceancredentialConfig={"accessToken": "test"})
     wait_remove_resource(cloud_credential)
 
-    data = {'userdata': 'do cool stuff' + random_str() + '\n',
-            # This validates ssh keys don't drop the ending \n
-            'id_rsa': 'some\nfake\nstuff\n' + random_str() + '\n'
-            }
+    data = {
+        'userdata': f'do cool stuff{random_str()}' + '\n',
+        'id_rsa': 'some\nfake\nstuff\n' + random_str() + '\n',
+    }
 
     def _node_template():
         try:
@@ -174,9 +170,7 @@ def test_writing_config_to_disk(admin_mc, wait_remove_resource):
 
     def node_available():
         node = client.list_node(nodePoolId=node_pool.id)
-        if len(node.data):
-            return node.data[0]
-        return None
+        return node.data[0] if len(node.data) else None
 
     node = wait_for(node_available)
     wait_for_condition("Saved", "False", client, node)
@@ -211,8 +205,7 @@ def test_node_driver_schema(admin_mc):
     for driver in drivers:
         schema = client.schema.types[driver]
         for field in bad_fields:
-            assert field not in schema.resourceFields, \
-                'Driver {} has field {}'.format(driver, field)
+            assert field not in schema.resourceFields, f'Driver {driver} has field {field}'
 
 
 def test_amazon_node_driver_schema(admin_mc):
@@ -221,8 +214,9 @@ def test_amazon_node_driver_schema(admin_mc):
     client = admin_mc.client
     schema = client.schema.types['amazonec2config']
     for field in required_fields:
-        assert field in schema.resourceFields, \
-            'amazonec2config missing support for field {}'.format(field)
+        assert (
+            field in schema.resourceFields
+        ), f'amazonec2config missing support for field {field}'
 
 
 def create_node_template(client, clientId="test"):
@@ -292,8 +286,10 @@ def test_user_access_to_other_template(user_factory, remove_resource):
             hostnamePrefix="test1",
             clusterId="local")
     assert e.value.error.status == 404
-    assert e.value.error.message == \
-        "unable to find node template [%s]" % user2_node_template.id
+    assert (
+        e.value.error.message
+        == f"unable to find node template [{user2_node_template.id}]"
+    )
 
 
 @pytest.mark.skip(reason="flaky, todo in 27885")
@@ -338,7 +334,8 @@ def test_user_cluster_owner_access_to_pool(admin_mc,
 
     # admin creates a node template and assigns to a pool
     admin_node_template, admin_cloud_credential = create_node_template(
-        admin_client, "admincloudcred-" + random_str())
+        admin_client, f"admincloudcred-{random_str()}"
+    )
     admin_pool = admin_client.create_node_pool(
         nodeTemplateId=admin_node_template.id,
         hostnamePrefix="test",
@@ -349,7 +346,8 @@ def test_user_cluster_owner_access_to_pool(admin_mc,
 
     # create a template for the user to try and assign
     user_node_template, user_cloud_credential = create_node_template(
-        user.client, "usercloudcred-" + random_str())
+        user.client, f"usercloudcred-{random_str()}"
+    )
     remove_resource(user_cloud_credential)
     remove_resource(user_node_template)
 
@@ -363,8 +361,10 @@ def test_user_cluster_owner_access_to_pool(admin_mc,
     with pytest.raises(ApiError) as e:
         user.client.update(admin_pool, nodeTemplateId=admin_node_template.id)
     assert e.value.error.status == 404
-    assert e.value.error.message == "unable to find node template [%s]" % \
-                                    admin_node_template.id
+    assert (
+        e.value.error.message
+        == f"unable to find node template [{admin_node_template.id}]"
+    )
 
     # delete this by hand and the rest will cleanup
     admin_client.delete(admin_pool)
@@ -447,5 +447,7 @@ def test_no_node_template(user_mc):
             hostnamePrefix="test1",
             clusterId="local")
     assert e.value.error.status == 404
-    assert e.value.error.message == \
-        "unable to find node template [%s]" % invalid_template_id
+    assert (
+        e.value.error.message
+        == f"unable to find node template [{invalid_template_id}]"
+    )

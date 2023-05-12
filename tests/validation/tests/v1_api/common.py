@@ -8,7 +8,7 @@ TEST_IMAGE_V1 = os.environ.get('RANCHER_TEST_IMAGE_V1', "ranchertest/mytestconta
 
 
 def get_admin_client_v1():
-    url = CATTLE_TEST_URL + "/v1"
+    url = f"{CATTLE_TEST_URL}/v1"
     # in fact, we get the cluster client for the local cluster
     return rancher.Client(url=url, token=ADMIN_TOKEN, verify=False)
 
@@ -20,7 +20,7 @@ def get_cluster_client_for_token_v1(cluster_id=None, token=None):
     if token is None:
         token = USER_TOKEN
 
-    url = CATTLE_TEST_URL + "/k8s/clusters/" + cluster_id + "/v1/schemas"
+    url = f"{CATTLE_TEST_URL}/k8s/clusters/{cluster_id}/v1/schemas"
     return rancher.Client(url=url, token=token, verify=False)
 
 
@@ -30,7 +30,7 @@ def get_cluster_by_name(client, cluster_name):
     for cluster in res["data"]:
         if cluster["spec"]["displayName"] == cluster_name:
             return cluster
-    assert False, "failed to find the cluster {}".format(cluster_name)
+    assert False, f"failed to find the cluster {cluster_name}"
 
 
 def display(res):
@@ -38,20 +38,20 @@ def display(res):
         print("None object is returned")
         return
     if isinstance(res, dict) and "data" in res.keys():
-        print("count of data {}".format(len(res.data)))
+        print(f"count of data {len(res.data)}")
         for item in res.get("data"):
             print("-------")
             pprint.pprint(item)
         return
     else:
-        print("This is a instance of {}".format(type(res)))
+        print(f"This is a instance of {type(res)}")
         pprint.pprint(res)
 
 
 def read_json_from_resource_dir(filename):
     dir_path = os.path.dirname(os.path.realpath(__file__))
     try:
-        with open('{}/resource/{}'.format(dir_path, filename)) as f:
+        with open(f'{dir_path}/resource/{filename}') as f:
             data = json.load(f)
         return data
     except FileNotFoundError as e:
@@ -61,7 +61,7 @@ def read_json_from_resource_dir(filename):
 def read_yaml_from_resource_dir(filename):
     dir_path = os.path.dirname(os.path.realpath(__file__))
     try:
-        with open('{}/resource/{}'.format(dir_path, filename)) as f:
+        with open(f'{dir_path}/resource/{filename}') as f:
             data = yaml.safe_load(f)
         return data
     except FileNotFoundError as e:
@@ -75,5 +75,4 @@ def create_project(cluster, project_name):
     project["metadata"]["namespace"] = cluster["id"]
     project["spec"]["clusterName"] = cluster["id"]
     project["spec"]["displayName"] = project_name
-    res = admin_client.create_management_cattle_io_project(project)
-    return res
+    return admin_client.create_management_cattle_io_project(project)

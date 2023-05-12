@@ -86,11 +86,10 @@ def match_nodes(nodes, k8s_nodes):
     nodes_to_k8s_nodes[0][0] is the node object matched to
     nodes_to_k8s_nodes[0][1] is the k8s info for the same node
     """
-    k8s_node_names = []
-    for k8s_node in k8s_nodes['items']:
-        k8s_node_names.append(
-            k8s_node['metadata']['labels']['kubernetes.io/hostname'])
-
+    k8s_node_names = [
+        k8s_node['metadata']['labels']['kubernetes.io/hostname']
+        for k8s_node in k8s_nodes['items']
+    ]
     nodes_to_k8s_nodes = []
     for node in nodes:
         for k8s_node in k8s_nodes['items']:
@@ -130,19 +129,13 @@ def assert_containers_exist_for_roles(roles, containers):
 
 def wait_for_etcd_cluster_health(node, etcd_private_ip=False):
     result = ''
-    endpoints = "127.0.0.1"
-    if etcd_private_ip:
-        endpoints = node.private_ip_address
-    etcd_tls_cmd = (
-        'ETCDCTL_API=2 etcdctl --endpoints "https://'+endpoints+':2379" '
-        ' --ca-file /etc/kubernetes/ssl/kube-ca.pem --cert-file '
-        ' $ETCDCTL_CERT --key-file '
-        ' $ETCDCTL_KEY cluster-health')
+    endpoints = node.private_ip_address if etcd_private_ip else "127.0.0.1"
+    etcd_tls_cmd = f'ETCDCTL_API=2 etcdctl --endpoints "https://{endpoints}:2379"  --ca-file /etc/kubernetes/ssl/kube-ca.pem --cert-file  $ETCDCTL_CERT --key-file  $ETCDCTL_KEY cluster-health'
 
     print(etcd_tls_cmd)
     start_time = time.time()
     while start_time - time.time() < 120:
-        result = node.docker_exec('etcd', "sh -c '" + etcd_tls_cmd + "'")
+        result = node.docker_exec('etcd', f"sh -c '{etcd_tls_cmd}'")
         print("**RESULT**")
         print(result)
         if 'cluster is healthy' in result:
@@ -208,7 +201,7 @@ def verify_networking_addon_images(k8sversion, kubectl,
 def verify_component_status_with_kubectl(kubectl, namespace, selector, *args):
     # Method to verify addon status and images
 
-    command = "get pod --namespace " + namespace + " -l " + selector
+    command = f"get pod --namespace {namespace} -l {selector}"
 
     res = kubectl.execute_kubectl_cmd(command, json_out=True)
     result = json.loads(res)
@@ -218,8 +211,8 @@ def verify_component_status_with_kubectl(kubectl, namespace, selector, *args):
     for pod in result["items"]:
         podstatus = pod["status"]["phase"]
         podname = pod["metadata"]["name"]
-        print("Pod name is " + podname)
-        podreloadcommand = "get pod " + podname + " --namespace " + namespace
+        print(f"Pod name is {podname}")
+        podreloadcommand = f"get pod {podname} --namespace {namespace}"
         while (podstatus != "Running"):
             if time.time() - start > timeout:
                 raise AssertionError("Timed out waiting to reach running state")
@@ -228,11 +221,9 @@ def verify_component_status_with_kubectl(kubectl, namespace, selector, *args):
                                                     json_out=True)
             podresult = json.loads(podresult)
             podname = podresult["metadata"]["name"]
-            print("Pod name is " + podname)
+            print(f"Pod name is {podname}")
             podstatus = podresult["status"]["phase"]
-            print("Pod status is " + podstatus)
-        assert True
-
+            print(f"Pod status is {podstatus}")
     # Verify the component images in the pods
     testresult = kubectl.execute_kubectl_cmd(command, json_out=True)
     updatedresult = json.loads(testresult)
@@ -250,7 +241,7 @@ def get_system_images(rke_client, k8s_version):
 
     # Method to obtain the system images for a k8s version  from rke cli
 
-    command = ("rke config --system-images --version " + k8s_version)
+    command = f"rke config --system-images --version {k8s_version}"
     print(command)
     rke_system_images_dict = rke_client.run_command(command)
     result = rke_system_images_dict.split("\n")
@@ -270,34 +261,30 @@ def get_component_version(k8s_version, componentname):
         if componentname == itemlist[0]:
            print(componentname)
            componentversion = item
-    print("VERSION IS " + componentversion)
+    print(f"VERSION IS {componentversion}")
     return componentversion
 
 
 def build_expectedimages_dict(k8s_version, rke_client):
-    # Build the expected image list from rke system images list
-    
-    if k8s_version in expectedimagesdict.keys():
-        return expectedimagesdict[k8s_version]
-    else:
+    if k8s_version not in expectedimagesdict.keys():
         expectedimagesdict[k8s_version] = {}
         result = get_system_images(rke_client, k8s_version)
         for item in result:
             itemlist = item.split(":")
-            if "rancher/hyperkube" == itemlist[0]:
+            if itemlist[0] == "rancher/hyperkube":
                 expectedimagesdict[k8s_version]["kube-proxy"] = item
                 expectedimagesdict[k8s_version]["kube-scheduler"] = item
                 expectedimagesdict[k8s_version]["kube-controller-manager"] \
                     = item
                 expectedimagesdict[k8s_version]["kube-apiserver"] = item
                 expectedimagesdict[k8s_version]["kubelet"] = item
-            if "rancher/coreos-etc[k8s_version]" == itemlist[0]:
+            if itemlist[0] == "rancher/coreos-etc[k8s_version]":
                 expectedimagesdict[k8s_version]["etcd"] = item
-            if "rancher/rke-tools" == itemlist[0]:
+            if itemlist[0] == "rancher/rke-tools":
                 expectedimagesdict[k8s_version]["service-sidekick"] = item
 
         expectedimagesdict[k8s_version]["rkesystemimages"] = result
-        return expectedimagesdict[k8s_version]
+    return expectedimagesdict[k8s_version]
 
 
 def validation_node_roles(nodes, k8s_nodes, etcd_private_ip=False):
@@ -332,8 +319,7 @@ def validation_node_roles(nodes, k8s_nodes, etcd_private_ip=False):
                     role_matcher[role], k8s_node_labels)
 
             # nodes with controlplane roles do not have nginx-proxy
-            if (role == 'worker' or role == 'etcd') and \
-                    ('controlplane' not in node.roles):
+            if role in ['worker', 'etcd'] and 'controlplane' not in node.roles:
                 result = node.docker_exec(
                     'nginx-proxy', 'cat /etc/nginx/nginx.conf')
                 for ip in controlplane_ips:
@@ -357,8 +343,7 @@ def validation_node_roles(nodes, k8s_nodes, etcd_private_ip=False):
                 # check etcd membership and cluster health
                 result = wait_for_etcd_cluster_health(node, etcd_private_ip)
                 for member in etcd_members:
-                    expect = "got healthy result from https://{}".format(
-                        member)
+                    expect = f"got healthy result from https://{member}"
                     assert expect in result, result
                 assert 'cluster is healthy' in result, result
 
@@ -366,10 +351,9 @@ def validation_node_roles(nodes, k8s_nodes, etcd_private_ip=False):
 class PodIntercommunicationValidation(object):
     def __init__(self, kubectl, base_namespace):
         self.kubectl = kubectl
-        self.yml_file = (
-            k8s_resource_dir + 'daemonset_pods_per_node.yml')
-        self.ns_out = 'daemonset-out-{}'.format(base_namespace)
-        self.ns_in = 'daemonset-in-{}'.format(base_namespace)
+        self.yml_file = f'{k8s_resource_dir}daemonset_pods_per_node.yml'
+        self.ns_out = f'daemonset-out-{base_namespace}'
+        self.ns_in = f'daemonset-in-{base_namespace}'
         self.selector = 'name=daemonset-test1'
 
     def setup(self):
@@ -419,18 +403,14 @@ class PodIntercommunicationValidation(object):
             "nodes '{1}'".format(
                 len(pods_from_which_ping['items']), expected_number_pods))
 
-        pod_ips_to_ping = []
-        for pod in pods_to_ping['items']:
-            pod_ips_to_ping.append(pod['status']['podIP'])
-
-        pod_names_to_ping_from = []
-        for pod in pods_from_which_ping['items']:
-            pod_names_to_ping_from.append(pod['metadata']['name'])
-
+        pod_ips_to_ping = [pod['status']['podIP'] for pod in pods_to_ping['items']]
+        pod_names_to_ping_from = [
+            pod['metadata']['name'] for pod in pods_from_which_ping['items']
+        ]
         # From each pod of daemonset in namespace ns_out, ping all pods
         # in from second daemonset in ns_in
         expect_result = \
-            '1 packets transmitted, 1 received, 0% packet loss'
+                '1 packets transmitted, 1 received, 0% packet loss'
         for pod_name in pod_names_to_ping_from:
             for pod_ip in pod_ips_to_ping:
                 cmd = 'ping -c 1 {0}'.format(pod_ip)
@@ -455,20 +435,20 @@ class PodIntercommunicationValidation(object):
 
 class DNSServiceDiscoveryValidation(object):
     def __init__(self, kubectl, base_namespace):
-        namespace_one = 'nsone-{}'.format(base_namespace)
-        namespace_two = 'nstwo-{}'.format(base_namespace)
+        namespace_one = f'nsone-{base_namespace}'
+        namespace_two = f'nstwo-{base_namespace}'
         self.namespace = namespace_one
         self.services = {
             'k8test1': {
                 'namespace': namespace_one,
                 'selector': 'k8s-app=k8test1-service',
-                'yml_file': k8s_resource_dir + 'service_k8test1.yml',
+                'yml_file': f'{k8s_resource_dir}service_k8test1.yml',
             },
             'k8test2': {
                 'namespace': namespace_two,
                 'selector': 'k8s-app=k8test2-service',
-                'yml_file': k8s_resource_dir + 'service_k8test2.yml',
-            }
+                'yml_file': f'{k8s_resource_dir}service_k8test2.yml',
+            },
         }
         self.pod_selector = 'k8s-app=pod-test-util'
         self.kubectl = kubectl
@@ -483,8 +463,8 @@ class DNSServiceDiscoveryValidation(object):
                 service_info['yml_file'], namespace=service_info['namespace'])
 
         result = self.kubectl.create_resourse_from_yml(
-            k8s_resource_dir + 'single_pod.yml',
-            namespace=self.namespace)
+            f'{k8s_resource_dir}single_pod.yml', namespace=self.namespace
+        )
 
     def validate(self):
         # wait for exec pod to be ready before validating
@@ -549,6 +529,7 @@ def validate_k8s_service_images(nodes, k8s_version, rke_client, kubectl):
     expectedimagesdict = build_expectedimages_dict(k8s_version, rke_client)
     print(expectedimagesdict)
 
+    sidekickservice = "service-sidekick"
     for node in nodes:
         containers = node.docker_ps()
         allcontainers = node.docker_ps(includeall=True)
@@ -556,7 +537,6 @@ def validate_k8s_service_images(nodes, k8s_version, rke_client, kubectl):
         print(containers)
         print("All containers dictionary")
         print(allcontainers)
-        sidekickservice = "service-sidekick"
         for key in expectedimagesdict.keys():
             servicename = key
             if servicename in containers:
@@ -570,18 +550,20 @@ def validate_k8s_service_images(nodes, k8s_version, rke_client, kubectl):
                    "{1}, found {2} on node {3}".format(
                    servicename, expectedimagesdict[servicename],
                    containers[servicename], node.node_name))
-        if sidekickservice in expectedimagesdict.keys():
-            if sidekickservice in allcontainers:
-                print("sidekick-service in allcontainers")
-                print(sidekickservice)
-                print(expectedimagesdict[sidekickservice])
-                print(allcontainers[sidekickservice])
-                assert expectedimagesdict[sidekickservice] == \
-                    allcontainers[sidekickservice], (
-                    "K8s service '{0}' does not match config version "
-                    "{1}, found {2} on node {3}".format(
-                    sidekickservice, expectedimagesdict[sidekickservice],
-                    allcontainers[sidekickservice], node.node_name))
+        if (
+            sidekickservice in expectedimagesdict.keys()
+            and sidekickservice in allcontainers
+        ):
+            print("sidekick-service in allcontainers")
+            print(sidekickservice)
+            print(expectedimagesdict[sidekickservice])
+            print(allcontainers[sidekickservice])
+            assert expectedimagesdict[sidekickservice] == \
+                allcontainers[sidekickservice], (
+                "K8s service '{0}' does not match config version "
+                "{1}, found {2} on node {3}".format(
+                sidekickservice, expectedimagesdict[sidekickservice],
+                allcontainers[sidekickservice], node.node_name))
 
     verify_ingress_addon_images(k8s_version, kubectl,
                                 "ingress-nginx", "app=ingress-nginx",
@@ -619,7 +601,7 @@ def validate_remove_cluster(nodes):
                 .format(service, node.node_name))
 
         for directory in rke_cleaned_directories:
-            result = node.execute_command('ls ' + directory)
+            result = node.execute_command(f'ls {directory}')
             assert result[0] == '', (
                 "Found a non-empty directory '{0}' after remove on node '{1}'"
                 .format(directory, node.node_name))

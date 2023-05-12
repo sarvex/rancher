@@ -39,7 +39,7 @@ def test_only_admin_can_crud_global_roles(admin_mc, user_mc, remove_resource):
     admin_client = admin_mc.client
     user_client = user_mc.client
 
-    gr = admin_client.create_global_role(name="gr-" + random_str())
+    gr = admin_client.create_global_role(name=f"gr-{random_str()}")
     remove_resource(gr)
 
     gr.annotations = {"test": "asdf"}
@@ -61,11 +61,11 @@ def test_only_admin_can_crud_global_roles(admin_mc, user_mc, remove_resource):
     admin_client.delete(gr)
 
     with pytest.raises(ApiError) as e:
-        gr2 = user_client.create_global_role(name="gr2-" + random_str())
+        gr2 = user_client.create_global_role(name=f"gr2-{random_str()}")
         remove_resource(gr2)
     assert e.value.error.status == 403
 
-    gr3 = admin_client.create_global_role(name="gr3-" + random_str())
+    gr3 = admin_client.create_global_role(name=f"gr3-{random_str()}")
     remove_resource(gr3)
 
     with pytest.raises(ApiError) as e:
@@ -99,8 +99,7 @@ def test_admin_can_only_edit_builtin_global_roles(admin_mc, remove_resource):
     assert gr.builtin is True
     assert "remove" not in gr.links.keys()
 
-    gr2 = admin_client.create_global_role(name="gr2-" + random_str(),
-                                          builtin=True)
+    gr2 = admin_client.create_global_role(name=f"gr2-{random_str()}", builtin=True)
     remove_resource(gr2)
 
     # assert that builtin cannot be set by admin and is false

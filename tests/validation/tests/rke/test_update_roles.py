@@ -18,7 +18,7 @@ def test_update_roles_1(test_name, cloud_provider, rke_client, kubectl):
     all_nodes = cloud_provider.create_multiple_nodes(4, test_name)
 
     # Only use three nodes at first
-    before_update_nodes = all_nodes[0:-1]
+    before_update_nodes = all_nodes[:-1]
     rke_template = 'cluster_update_roles_1_1.yml.j2'
     network, dns_discovery = create_and_validate(
         cloud_provider, rke_client, kubectl, rke_template, before_update_nodes,
@@ -53,8 +53,8 @@ def test_update_roles_2(test_name, cloud_provider, rke_client, kubectl):
     node3 - worker
     """
     all_nodes = cloud_provider.create_multiple_nodes(4, test_name)
-    before_update_nodes = all_nodes[0:-1]
-    removed_node_nodes = all_nodes[0:2] + all_nodes[3:]
+    before_update_nodes = all_nodes[:-1]
+    removed_node_nodes = all_nodes[:2] + all_nodes[3:]
     # all_nodes[0:2] = [node0, node1]
     # all_nodes[3:] = [node3]
 
@@ -104,7 +104,7 @@ def test_update_roles_3(test_name, cloud_provider, rke_client, kubectl):
     node3 - controlplane
     """
     all_nodes = cloud_provider.create_multiple_nodes(4, test_name)
-    before_update_nodes = all_nodes[0:-1]  # only use three nodes at first
+    before_update_nodes = all_nodes[:-1]
 
     # Only use three nodes at first
     rke_template = 'cluster_update_roles_3_1.yml.j2'
@@ -142,7 +142,7 @@ def test_update_roles_4(test_name, cloud_provider, rke_client, kubectl):
     node3 - controlplane
     """
     all_nodes = cloud_provider.create_multiple_nodes(4, test_name)
-    before_update_nodes = all_nodes[0:-1]  # only use three nodes at first
+    before_update_nodes = all_nodes[:-1]
     removed_node_nodes = all_nodes[1:]
 
     rke_template = 'cluster_update_roles_4_1.yml.j2'
@@ -188,7 +188,7 @@ def test_update_roles_5(test_name, cloud_provider, rke_client, kubectl):
     node1 - etcd
     """
     all_nodes = cloud_provider.create_multiple_nodes(2, test_name)
-    before_update_nodes = all_nodes[0:-1]  # only use one node at first
+    before_update_nodes = all_nodes[:-1]
 
     rke_template = 'cluster_update_roles_5_1.yml.j2'
     network, dns_discovery = create_and_validate(
@@ -217,7 +217,7 @@ def test_update_roles_6(test_name, cloud_provider, rke_client, kubectl):
     node2 - etcd
     """
     all_nodes = cloud_provider.create_multiple_nodes(3, test_name)
-    before_update_nodes = all_nodes[0:-2]  # only use one node at first
+    before_update_nodes = all_nodes[:-2]
 
     rke_template = 'cluster_update_roles_6_1.yml.j2'
     network, dns_discovery = create_and_validate(
@@ -248,7 +248,7 @@ def test_update_roles_7(test_name, cloud_provider, rke_client, kubectl):
     node1 - worker
     """
     all_nodes = cloud_provider.create_multiple_nodes(3, test_name)
-    removed_node_nodes = all_nodes[0:-1]
+    removed_node_nodes = all_nodes[:-1]
 
     rke_template = 'cluster_update_roles_7_1.yml.j2'
     network, dns_discovery = create_and_validate(
@@ -281,7 +281,7 @@ def test_update_roles_8(test_name, cloud_provider, rke_client, kubectl):
     node1 - controlplane, etcd, worker
     """
     all_nodes = cloud_provider.create_multiple_nodes(2, test_name)
-    before_update_nodes = all_nodes[0:-1]
+    before_update_nodes = all_nodes[:-1]
     removed_node_nodes = all_nodes[1:]
 
     # Inital cluster
@@ -331,7 +331,7 @@ def test_update_roles_9(test_name, cloud_provider, rke_client, kubectl):
     node3 - controlplane, worker
     """
     all_nodes = cloud_provider.create_multiple_nodes(4, test_name)
-    before_update_nodes = all_nodes[0:-1]  # only use three nodes at first
+    before_update_nodes = all_nodes[:-1]
 
     # Inital cluster
     rke_template = 'cluster_update_roles_9_1.yml.j2'
@@ -365,7 +365,7 @@ def test_update_roles_10(test_name, cloud_provider, rke_client, kubectl):
     node3 - controlplane, etcd
     """
     all_nodes = cloud_provider.create_multiple_nodes(4, test_name)
-    before_update_nodes = all_nodes[0:-1]  # only use three nodes at first
+    before_update_nodes = all_nodes[:-1]
 
     # Inital cluster
     rke_template = 'cluster_update_roles_10_1.yml.j2'
@@ -399,7 +399,7 @@ def test_update_roles_11(test_name, cloud_provider, rke_client, kubectl):
     node3 - worker, etcd
     """
     all_nodes = cloud_provider.create_multiple_nodes(4, test_name)
-    before_update_nodes = all_nodes[0:-1]  # only use three nodes at first
+    before_update_nodes = all_nodes[:-1]
 
     # Inital cluster
     rke_template = 'cluster_update_roles_11_1.yml.j2'
@@ -434,10 +434,10 @@ def test_update_roles_12(test_name, cloud_provider, rke_client, kubectl):
     node5 - controlplane <- New contolplane node
     """
     all_nodes = cloud_provider.create_multiple_nodes(6, test_name)
-    before_update_nodes = all_nodes[0:-1]  # only use five nodes at first
+    before_update_nodes = all_nodes[:-1]
     # all_nodes[0:2] = [node0, node1]
     # all_nodes[5:] = [node5]
-    removed_node_nodes = all_nodes[0:2] + all_nodes[5:]
+    removed_node_nodes = all_nodes[:2] + all_nodes[5:]
 
     # Inital cluster
     rke_template = 'cluster_update_roles_12_1.yml.j2'

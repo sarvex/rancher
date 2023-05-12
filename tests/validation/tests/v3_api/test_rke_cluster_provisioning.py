@@ -502,20 +502,17 @@ def test_rke_custom_host_stress():
 
     node_roles = [["controlplane"], ["etcd"], ["etcd"], ["etcd"]]
     worker_role = ["worker"]
-    for int in range(0, worker_count):
-        node_roles.append(worker_role)
+    node_roles.extend(worker_role for _ in range(0, worker_count))
     client = get_user_client()
     cluster = client.create_cluster(name=evaluate_clustername(),
                                     driver="rancherKubernetesEngine",
                                     rancherKubernetesEngineConfig=rke_config)
     assert cluster.state == "provisioning"
-    i = 0
-    for aws_node in aws_nodes:
+    for i, aws_node in enumerate(aws_nodes):
         docker_run_cmd = \
             get_custom_host_registration_cmd(client, cluster, node_roles[i],
                                              aws_node)
         aws_node.execute_command(docker_run_cmd)
-        i += 1
     cluster = validate_cluster(client, cluster,
                                check_intermediate_state=False)
     cluster_cleanup(client, cluster, aws_nodes)
@@ -764,7 +761,6 @@ def validate_rke_dm_host_1(node_template,
                            rancherKubernetesEngineConfig=rke_config,
                            attemptDelete=True):
     client = get_user_client()
-    nodes = []
     node_name = random_node_name()
     node = {"hostnamePrefix": node_name,
             "nodeTemplateId": node_template.id,
@@ -773,7 +769,7 @@ def validate_rke_dm_host_1(node_template,
             "worker": True,
             "quantity": 1,
             "clusterId": None}
-    nodes.append(node)
+    nodes = [node]
     cluster, node_pools = create_and_validate_cluster(
         client, nodes, rancherKubernetesEngineConfig)
     if attemptDelete:
@@ -786,14 +782,13 @@ def validate_rke_dm_host_2(node_template,
                            rancherKubernetesEngineConfig=rke_config,
                            attemptDelete=True, clusterName=None):
     client = get_user_client()
-    nodes = []
     node_name = random_node_name()
     node = {"hostnamePrefix": node_name,
             "nodeTemplateId": node_template.id,
             "requestedHostname": node_name,
             "controlPlane": True,
             "quantity": 1}
-    nodes.append(node)
+    nodes = [node]
     node_name = random_node_name()
     node = {"hostnamePrefix": node_name,
             "nodeTemplateId": node_template.id,
@@ -817,14 +812,13 @@ def validate_rke_dm_host_2(node_template,
 def validate_rke_dm_host_3(node_template,
                            rancherKubernetesEngineConfig=rke_config):
     client = get_user_client()
-    nodes = []
     node_name = random_node_name()
     node = {"hostnamePrefix": node_name,
             "nodeTemplateId": node_template.id,
             "requestedHostname": node_name,
             "controlPlane": True,
             "quantity": 2}
-    nodes.append(node)
+    nodes = [node]
     node_name = random_node_name()
     node = {"hostnamePrefix": node_name,
             "nodeTemplateId": node_template.id,
@@ -848,8 +842,6 @@ def validate_rke_dm_host_4(node_template,
                            rancherKubernetesEngineConfig=rke_config):
     client = get_user_client()
 
-    # Create cluster and add a node pool to this cluster
-    nodes = []
     node_name = random_node_name()
     node = {"hostnamePrefix": node_name,
             "nodeTemplateId": node_template.id,
@@ -858,7 +850,7 @@ def validate_rke_dm_host_4(node_template,
             "etcd": True,
             "worker": True,
             "quantity": 1}
-    nodes.append(node)
+    nodes = [node]
     cluster, node_pools = create_and_validate_cluster(
         client, nodes, rancherKubernetesEngineConfig)
     assert len(cluster.nodes()) == 1
@@ -917,15 +909,11 @@ def random_node_name():
     if not HOST_NAME or HOST_NAME == "testcustom":
         return "testauto" + "-" + str(random_int(100000, 999999))
     else:
-        return HOST_NAME + "-" + str(random_int(100000, 999999))
+        return f"{HOST_NAME}-{str(random_int(100000, 999999))}"
 
 
 def evaluate_clustername():
-    if CLUSTER_NAME == "":
-        cluster_name = random_name()
-    else:
-        cluster_name = CLUSTER_NAME
-    return cluster_name
+    return random_name() if CLUSTER_NAME == "" else CLUSTER_NAME
 
 
 @pytest.fixture(scope='session')
@@ -1161,20 +1149,17 @@ def create_custom_host_from_nodes(nodes, node_roles,
                                     windowsPreferedCluster=windows)
     assert cluster.state == "provisioning"
 
-    i = 0
-    for aws_node in nodes:
+    for i, aws_node in enumerate(nodes):
         docker_run_cmd = \
             get_custom_host_registration_cmd(client, cluster, node_roles[i],
                                              aws_node)
-        print("Docker run command: " + docker_run_cmd)
+        print(f"Docker run command: {docker_run_cmd}")
 
         for nr in node_roles[i]:
             aws_node.roles.append(nr)
 
         result = aws_node.execute_command(docker_run_cmd)
         print(result)
-        i += 1
-
     cluster = validate_cluster_state(client, cluster,
                                      check_intermediate_state=False)
 
@@ -1192,7 +1177,7 @@ def get_cis_rke_config(profile=CIS_SCAN_PROFILE):
         rke_tmp_config = rke_config_dict[profile]
     except KeyError:
         print('Invalid RKE CIS profile. Supported profiles: ')
-        for k in rke_config_dict.keys():
+        for k in rke_config_dict:
             print("{0}".format(k))
     else:
         print('Valid RKE CIS Profile loaded: {0}'.format(profile))

@@ -22,7 +22,7 @@ def test_nfs_wl_deployment():
     pvc_name = namespace["pvc"].name
     wl_name = sub_path = random_test_name("deployment")
     content = "from-test-wl-deployment"
-    file_path = MOUNT_PATH + "/wl-deployment.txt"
+    file_path = f"{MOUNT_PATH}/wl-deployment.txt"
 
     # deploy the first workload
     wl = create_wl_with_nfs(p_client, ns.id, pvc_name, wl_name,
@@ -56,7 +56,7 @@ def test_nfs_wl_scale_up():
     pvc_name = namespace["pvc"].name
     wl_name = sub_path = random_test_name("scale-up")
     content = "from-nfs-wl-scale-up"
-    file_path = MOUNT_PATH + "/wl-scale-up.txt"
+    file_path = f"{MOUNT_PATH}/wl-scale-up.txt"
     # deploy the workload
     wl = create_wl_with_nfs(p_client, ns.id, pvc_name, wl_name,
                             mount_path=MOUNT_PATH, sub_path=sub_path)
@@ -85,7 +85,7 @@ def test_nfs_wl_upgrade():
     pvc_name = namespace["pvc"].name
     wl_name = sub_path = random_test_name("upgrade")
     content = "from-nfs-wl-upgrade"
-    file_path = MOUNT_PATH + "/wl-upgrade.txt"
+    file_path = f"{MOUNT_PATH}/wl-upgrade.txt"
     # deploy the workload
     wl = create_wl_with_nfs(p_client, ns.id, pvc_name, wl_name,
                             mount_path=MOUNT_PATH, sub_path=sub_path)
@@ -119,7 +119,7 @@ def test_nfs_wl_upgrade():
     validate_file_content(pod, content, file_path)
 
     # check if it can write some data
-    content = content + "+after-upgrade"
+    content += "+after-upgrade"
     write_content_to_file(pod, content, file_path)
     validate_file_content(pod, content, file_path)
 
@@ -131,7 +131,7 @@ def test_nfs_wl_daemonSet():
     pvc_name = namespace["pvc"].name
     wl_name = sub_path = random_test_name("daemon-set")
     content = "from-nfs-wl-daemon-set"
-    file_path = MOUNT_PATH + "/" + "/wl-daemon-set.txt"
+    file_path = f"{MOUNT_PATH}//wl-daemon-set.txt"
 
     # deploy the workload
     wl = create_wl_with_nfs(p_client, ns.id, pvc_name, wl_name,
@@ -144,7 +144,7 @@ def test_nfs_wl_daemonSet():
     # then check if changes can be seen in all pods
     pods = p_client.list_pod(workloadId=wl.id).data
     for pod in pods:
-        content = content + "+" + pod.name
+        content = f"{content}+{pod.name}"
         write_content_to_file(pod, content, file_path)
         for item in pods:
             validate_file_content(item, content, file_path)

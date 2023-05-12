@@ -37,7 +37,7 @@ def test_builtin_drivers_are_present(admin_mc):
         ).data[0]
         wait_for_condition('Active', "True", admin_mc.client, kd, timeout=90)
         # check in schema
-        assert name + "Config" in types
+        assert f"{name}Config" in types
 
         # verify has no delete link because its built in
         kd = admin_mc.client.by_id_kontainer_driver(name.lower())
@@ -191,7 +191,7 @@ def test_upgrade_changes_schema(admin_mc, wait_remove_resource):
                             timeout=90)
 
     verify_driver_in_types(client, kd)
-    kdSchema = client.schema.types[kd.name + 'EngineConfig']
+    kdSchema = client.schema.types[f'{kd.name}EngineConfig']
     assert 'specialTestingField' not in kdSchema.resourceFields
 
     NEW_URL = NEW_DRIVER_URL
@@ -202,12 +202,12 @@ def test_upgrade_changes_schema(admin_mc, wait_remove_resource):
 
     def schema_updated():
         client.reload_schema()
-        kdSchema = client.schema.types[kd.name + 'EngineConfig']
+        kdSchema = client.schema.types[f'{kd.name}EngineConfig']
         return 'specialTestingField' in kdSchema.resourceFields
 
     wait_until(schema_updated)
 
-    kdSchema = client.schema.types[kd.name + 'EngineConfig']
+    kdSchema = client.schema.types[f'{kd.name}EngineConfig']
     assert 'specialTestingField' in kdSchema.resourceFields
 
 
@@ -258,9 +258,7 @@ def test_update_duplicate_driver_conflict(admin_mc, wait_remove_resource):
                              timeout=90)
 
     kd2 = admin_mc.client.create_kontainerDriver(
-        createDynamicSchema=True,
-        active=True,
-        url=URL + "2"
+        createDynamicSchema=True, active=True, url=f"{URL}2"
     )
     wait_remove_resource(kd2)
     kd2.url = URL
@@ -278,14 +276,14 @@ def test_kontainer_driver_links(admin_mc):
     lister = client.list_kontainerDriver()
     assert 'rancher-images' in lister.links
     assert 'rancher-windows-images' in lister.links
-    token = 'Bearer '+client.token
-    url = BASE_URL + "/kontainerdrivers/rancher-images"
+    token = f'Bearer {client.token}'
+    url = f"{BASE_URL}/kontainerdrivers/rancher-images"
     images = get_images(url, token)
     assert "hyperkube" in images
     assert "rke-tools" in images
     assert "kubelet-pause" not in images
     # test windows link
-    url = BASE_URL + "/kontainerdrivers/rancher-windows-images"
+    url = f"{BASE_URL}/kontainerdrivers/rancher-windows-images"
     images = get_images(url, token)
     assert "hyperkube" in images
     assert "rke-tools" in images
@@ -315,22 +313,22 @@ def verify_driver_in_types(client, kd):
     def check():
         client.reload_schema()
         types = client.schema.types
-        return kd.name + 'EngineConfig' in types
+        return f'{kd.name}EngineConfig' in types
 
     wait_until(check)
     client.reload_schema()
-    assert kd.name + 'EngineConfig' in client.schema.types
+    assert f'{kd.name}EngineConfig' in client.schema.types
 
 
 def verify_driver_not_in_types(client, kd):
     def check():
         client.reload_schema()
         types = client.schema.types
-        return kd.name + 'EngineConfig' not in types
+        return f'{kd.name}EngineConfig' not in types
 
     wait_until(check)
     client.reload_schema()
-    assert kd.name + 'EngineConfig' not in client.schema.types
+    assert f'{kd.name}EngineConfig' not in client.schema.types
 
 
 @pytest.mark.nonparallel

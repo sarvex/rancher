@@ -50,9 +50,9 @@ def get_aws_nodes_from_nodepools(client, cluster, nodepools):
             ip_address_filter = [{
                     'Name': 'private-ip-address', 'Values': [node_ip_address]}]
             nodes = AmazonWebServices().get_nodes(ip_address_filter)
-            assert len(nodes) == 1, \
-                "Multiple aws_nodes seem to have private-ip-address %s" \
-                % node_ip_address
+            assert (
+                len(nodes) == 1
+            ), f"Multiple aws_nodes seem to have private-ip-address {node_ip_address}"
             aws_nodes.append(nodes[0])
     return aws_nodes
 
@@ -82,14 +82,14 @@ def node_template_ec2_with_encryption(client):
     A node template that defines a set of encrypted EC2 volume backed instances
     """
     def _attempt_delete_node_template(client, node_template,
-                                      timeout=DEFAULT_TIMEOUT,
-                                      sleep_time=.5):
+                                          timeout=DEFAULT_TIMEOUT,
+                                          sleep_time=.5):
         start = time.time()
         while node_template:
             if time.time() - start > timeout:
                 raise AssertionError(
-                    "Timed out waiting for node template %s to get deleted"
-                    % node_template["name"])
+                    f'Timed out waiting for node template {node_template["name"]} to get deleted'
+                )
             time.sleep(sleep_time)
             client.reload(node_template)
             try:

@@ -11,7 +11,7 @@ class MockServer(Thread):
         from flask import Flask
         self.port = port
         self.app = Flask(__name__)
-        self.url = "http://localhost:%s" % self.port
+        self.url = f"http://localhost:{self.port}"
 
         self.app.add_url_rule("/shutdown", view_func=self._shutdown_server)
 
@@ -23,8 +23,10 @@ class MockServer(Thread):
         return 'Server shutting down...'
 
     def shutdown_server(self):
-        requests.get("http://localhost:%s/shutdown" % self.port,
-                     headers={'Connection': 'close'})
+        requests.get(
+            f"http://localhost:{self.port}/shutdown",
+            headers={'Connection': 'close'},
+        )
         self.join()
 
     def run(self):
@@ -65,7 +67,6 @@ class MockGithub(MockServer):
             view_func=self.api_commit)
         self.app.add_url_rule("/api/v3/repos/octocat/Hello-World/branches",
                               view_func=self.api_branch)
-        pass
 
     def __init__(self, port):
         super().__init__(port)

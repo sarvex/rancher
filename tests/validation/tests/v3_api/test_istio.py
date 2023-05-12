@@ -139,13 +139,13 @@ def test_istio_resources():
 
 
 def test_istio_deployment_options():
-    file_path = ISTIO_PATH + '/nginx-custom-sidecar.yaml'
+    file_path = f'{ISTIO_PATH}/nginx-custom-sidecar.yaml'
     expected_image = "rancher/istio-proxyv2:1.4.3"
     p_client = namespace["app_client"]
     ns = namespace["app_ns"]
 
-    execute_kubectl_cmd('apply -f ' + file_path + ' -n ' + ns.name, False)
-    result = execute_kubectl_cmd('get deployment -n ' + ns.name, True)
+    execute_kubectl_cmd(f'apply -f {file_path} -n {ns.name}', False)
+    result = execute_kubectl_cmd(f'get deployment -n {ns.name}', True)
 
     for deployment in result['items']:
         wl = p_client.list_workload(id='deployment:'
@@ -163,12 +163,11 @@ def test_istio_deployment_options():
         assert any(container.image == expected_image
                    for container in pod.containers)
     except AssertionError as e:
-        retrieved_images = ""
-        for container in pod.containers:
-            retrieved_images += container.image + " "
+        retrieved_images = "".join(
+            f"{container.image} " for container in pod.containers
+        )
         retrieved_images = retrieved_images.strip().split(" ")
-        raise AssertionError("None of {} matches '{}'".format(
-            retrieved_images, expected_image))
+        raise AssertionError(f"None of {retrieved_images} matches '{expected_image}'")
 
 
 # Enables all possible istio custom answers with the exception of certmanager
@@ -454,13 +453,11 @@ def test_rbac_istio_crds_project_owner(skipif_unsupported_istio_version,
     else :
         update_answers("default_access")
     kubectl_context = rbac_get_kubeconfig_by_role(PROJECT_OWNER)
-    file = ISTIO_CRD_PATH + '/' + manifest
+    file = f'{ISTIO_CRD_PATH}/{manifest}'
     ns = rbac_get_namespace()
-    assert re.match("{}.* created".format(crd),
-                    apply_crd(ns, file, kubectl_context))
+    assert re.match(f"{crd}.* created", apply_crd(ns, file, kubectl_context))
     assert "Forbidden" not in get_crd(ns, crd, kubectl_context)
-    assert re.match("{}.* deleted".format(crd),
-                    delete_crd(ns, file, kubectl_context))
+    assert re.match(f"{crd}.* deleted", delete_crd(ns, file, kubectl_context))
 
 
 @if_test_rbac
@@ -472,13 +469,11 @@ def test_rbac_istio_crds_project_member(skipif_unsupported_istio_version,
     else :
         update_answers("default_access")
     kubectl_context = rbac_get_kubeconfig_by_role(PROJECT_MEMBER)
-    file = ISTIO_CRD_PATH + '/' + manifest
+    file = f'{ISTIO_CRD_PATH}/{manifest}'
     ns = rbac_get_namespace()
-    assert re.match("{}.* created".format(crd),
-                    apply_crd(ns, file, kubectl_context))
+    assert re.match(f"{crd}.* created", apply_crd(ns, file, kubectl_context))
     assert "Forbidden" not in get_crd(ns, crd, kubectl_context)
-    assert re.match("{}.* deleted".format(crd),
-                    delete_crd(ns, file, kubectl_context))
+    assert re.match(f"{crd}.* deleted", delete_crd(ns, file, kubectl_context))
 
 
 @if_test_rbac
@@ -490,7 +485,7 @@ def test_rbac_istio_crds_project_read(skipif_unsupported_istio_version,
     else :
         update_answers("default_access")
     kubectl_context = rbac_get_kubeconfig_by_role(PROJECT_READ_ONLY)
-    file = ISTIO_CRD_PATH + '/' + manifest
+    file = f'{ISTIO_CRD_PATH}/{manifest}'
     ns = rbac_get_namespace()
     assert str(apply_crd(ns, file, kubectl_context)).startswith(
         "Error from server (Forbidden)")
@@ -506,13 +501,13 @@ def test_rbac_istio_group_access(auth_cluster_access, update_answers):
     kiali_url, tracing_url, grafana_url, prometheus_url = get_urls()
     for user in users:
         user_token = auth_get_user_token(user)
-        print("Validating {} has access.".format(user))
+        print(f"Validating {user} has access.")
         validate_access(kiali_url, user_token)
         validate_access(tracing_url, user_token)
         validate_no_access(grafana_url, user_token)
         validate_no_access(prometheus_url, user_token)
 
-    print("Validating {} does not have access.".format(noauth_user))
+    print(f"Validating {noauth_user} does not have access.")
     noauth_token = auth_get_user_token(noauth_user)
     validate_no_access(kiali_url, noauth_token)
     validate_no_access(tracing_url, noauth_token)
@@ -521,7 +516,7 @@ def test_rbac_istio_group_access(auth_cluster_access, update_answers):
 
 
 def validate_access(url, user):
-    headers = {'Authorization': 'Bearer ' + user}
+    headers = {'Authorization': f'Bearer {user}'}
     response = requests.get(headers=headers, url=url, verify=False)
 
     assert response.ok
@@ -529,7 +524,7 @@ def validate_access(url, user):
 
 
 def validate_no_access(url, user):
-    headers = {'Authorization': 'Bearer ' + user}
+    headers = {'Authorization': f'Bearer {user}'}
     response = requests.get(headers=headers, url=url, verify=False)
 
     assert not response.ok
@@ -585,19 +580,19 @@ def verify_istio_app_ready(p_client, app, install_timeout, deploy_timeout,
             if "False" in cond['status'] and 'message' in cond \
                     and "failed" in cond['message']:
                 raise AssertionError(
-                    "Failed to properly install/deploy app. Reason: {}".format(
-                        cond['message'])) from None
+                    f"Failed to properly install/deploy app. Reason: {cond['message']}"
+                ) from None
     try:
         wait_for_condition(p_client, app, check_condition('Installed', 'True'),
                            timeout=2)
-    except (Exception, TypeError):
+    except Exception:
         verify_istio_app_ready(p_client, p_client.list_app(
             name='cluster-istio').data[0], install_timeout-2, deploy_timeout,
                                initial_run=False)
     try:
         wait_for_condition(p_client, app, check_condition('Deployed', 'True'),
                            timeout=2)
-    except (Exception, TypeError):
+    except Exception:
         verify_istio_app_ready(p_client, p_client.list_app(
             name='cluster-istio').data[0], 2, deploy_timeout-2,
                                initial_run=False)
@@ -605,8 +600,7 @@ def verify_istio_app_ready(p_client, app, install_timeout, deploy_timeout,
 
 def get_urls():
     _, cluster = get_user_client_and_cluster()
-    if namespace["istio_version"] == "0.1.0" \
-            or namespace["istio_version"] == "0.1.1":
+    if namespace["istio_version"] in ["0.1.0", "0.1.1"]:
         kiali_url = os.environ.get('CATTLE_TEST_URL', "") + \
             "/k8s/clusters/" + cluster.id + \
             "/api/v1/namespaces/istio-system/services/" \
@@ -649,10 +643,9 @@ def add_istio_label_to_ns(c_client, ns):
 
 
 def create_and_test_bookinfo_services(p_client, ns, timeout=DEFAULT_TIMEOUT):
-    book_info_file_path = ISTIO_PATH + '/bookinfo.yaml'
-    execute_kubectl_cmd('apply -f ' + book_info_file_path + ' -n '
-                        + ns.name, False)
-    result = execute_kubectl_cmd('get deployment -n ' + ns.name, True)
+    book_info_file_path = f'{ISTIO_PATH}/bookinfo.yaml'
+    execute_kubectl_cmd(f'apply -f {book_info_file_path} -n {ns.name}', False)
+    result = execute_kubectl_cmd(f'get deployment -n {ns.name}', True)
 
     for deployment in result['items']:
         wl = p_client.list_workload(id='deployment:'
@@ -663,15 +656,15 @@ def create_and_test_bookinfo_services(p_client, ns, timeout=DEFAULT_TIMEOUT):
         wl_pods = wait_for_pods_in_workload(p_client, wl, 1)
         wait_for_pod_to_running(p_client, wl_pods[0])
 
-    rating_pod = execute_kubectl_cmd('get pod -l app=ratings -n' + ns.name)
+    rating_pod = execute_kubectl_cmd(f'get pod -l app=ratings -n{ns.name}')
     assert len(rating_pod['items']) == 1
 
     rating_pod_name = rating_pod['items'][0]['metadata']['name']
     try:
         result = execute_kubectl_cmd(
-            'exec -it -n ' + ns.name + ' ' + rating_pod_name
-            + ' -c ratings -- curl productpage:9080/productpage'
-            + ' | grep -o "<title>.*</title>"', False)
+            f'exec -it -n {ns.name} {rating_pod_name} -c ratings -- curl productpage:9080/productpage | grep -o "<title>.*</title>"',
+            False,
+        )
     except CalledProcessError:
         result = None
 
@@ -683,9 +676,9 @@ def create_and_test_bookinfo_services(p_client, ns, timeout=DEFAULT_TIMEOUT):
         time.sleep(.5)
         try:
             result = execute_kubectl_cmd(
-                'exec -it -n ' + ns.name + ' ' + rating_pod_name
-                + ' -c ratings -- curl productpage:9080/productpage'
-                + ' | grep -o "<title>.*</title>"', False)
+                f'exec -it -n {ns.name} {rating_pod_name} -c ratings -- curl productpage:9080/productpage | grep -o "<title>.*</title>"',
+                False,
+            )
         except CalledProcessError:
             result = None
     assert result.rstrip() == ISTIO_BOOKINFO_QUERY_RESULT
@@ -708,11 +701,10 @@ def create_and_test_bookinfo_gateway(app_client, namespace,
                               selector=selector,
                               servers=servers)
 
-    gateways = execute_kubectl_cmd('get gateway -n' + namespace.name, True)
+    gateways = execute_kubectl_cmd(f'get gateway -n{namespace.name}', True)
     assert len(gateways['items']) == 1
 
-    curl_cmd = 'curl -s http://' + gateway_url \
-               + '/productpage | grep -o "<title>.*</title>"'
+    curl_cmd = f'curl -s http://{gateway_url}/productpage | grep -o "<title>.*</title>"'
 
     result = run_command(curl_cmd)
 
@@ -800,8 +792,9 @@ def create_and_test_bookinfo_routing(app_client, namespace,
                                       http=http,
                                       hosts=["reviews"])
 
-    curl_cmd = 'curl -s http://' + gateway_url \
-               + '/productpage | grep -o "glyphicon-star"'
+    curl_cmd = (
+        f'curl -s http://{gateway_url}/productpage | grep -o "glyphicon-star"'
+    )
 
     result = run_command(curl_cmd)
 
@@ -830,8 +823,7 @@ def get_system_client(user):
     client, cluster = get_user_client_and_cluster()
     projects = client.list_project(name='System', clusterId=cluster.id)
     if len(projects.data) == 0:
-        raise AssertionError(
-            "System project not found in the cluster " + cluster.Name)
+        raise AssertionError(f"System project not found in the cluster {cluster.Name}")
     p = projects.data[0]
     return get_project_client_for_token(p, user)
 
@@ -927,7 +919,7 @@ def skipif_unsupported_istio_version(request):
         client, _ = get_user_client_and_cluster()
         istio_versions = list(client.list_template(
             id=ISTIO_TEMPLATE_ID).data[0].versionLinks.keys())
-        istio_version = istio_versions[len(istio_versions) - 1]
+        istio_version = istio_versions[-1]
     if compare_versions(istio_version, "1.4.3") < 0:
         pytest.skip("This test is not supported for older Istio versions")
 
@@ -962,15 +954,14 @@ def create_project_client(request):
 
     projects = client.list_project(name='System', clusterId=cluster.id)
     if len(projects.data) == 0:
-        raise AssertionError(
-            "System project not found in the cluster " + cluster.name)
+        raise AssertionError(f"System project not found in the cluster {cluster.name}")
     p = projects.data[0]
     p_client = get_project_client_for_token(p, USER_TOKEN)
     c_client = get_cluster_client_for_token(cluster, USER_TOKEN)
 
     istio_versions = list(client.list_template(
         id=ISTIO_TEMPLATE_ID).data[0].versionLinks.keys())
-    istio_version = istio_versions[len(istio_versions) - 1]
+    istio_version = istio_versions[-1]
 
     if ISTIO_VERSION != "":
         istio_version = ISTIO_VERSION
@@ -1033,4 +1024,5 @@ def create_project_client(request):
             client.action(c, "disableMonitoring")
         # delete the istio testing project
         client.delete(istio_project)
+
     request.addfinalizer(fin)

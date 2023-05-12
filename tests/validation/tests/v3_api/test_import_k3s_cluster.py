@@ -30,7 +30,7 @@ RANCHER_INSTANCE_CLASS = os.environ.get("RANCHER_INSTANCE_CLASS",
                                         "db.t2.micro")
 RANCHER_DB_USERNAME = os.environ.get("RANCHER_DB_USERNAME", "adminuser")
 RANCHER_DB_PASSWORD = os.environ.get("RANCHER_DB_PASSWORD", "")
-RANCHER_K3S_KUBECONFIG_PATH = DATA_SUBDIR + "/k3s_kubeconfig.yaml"
+RANCHER_K3S_KUBECONFIG_PATH = f"{DATA_SUBDIR}/k3s_kubeconfig.yaml"
 RANCHER_NODE_OS = os.environ.get("RANCHER_NODE_OS", "ubuntu")
 RANCHER_INSTALL_MODE = os.environ.get("RANCHER_INSTALL_MODE", "INSTALL_K3S_VERSION")
 RANCHER_RDS_ENVIRONMENT = os.environ.get("RANCHER_RDS_ENVIRONMENT", "dev")
@@ -89,14 +89,14 @@ def create_single_control_cluster():
     print(k3s_clusterfilepath)
 
     k3s_kubeconfig_file = "k3s_kubeconfig.yaml"
-    k3s_clusterfilepath = DATA_SUBDIR + "/" + k3s_kubeconfig_file
+    k3s_clusterfilepath = f"{DATA_SUBDIR}/{k3s_kubeconfig_file}"
     is_file = os.path.isfile(k3s_clusterfilepath)
     assert is_file
     with open(k3s_clusterfilepath, 'r') as f:
         print(f.read())
-    cmd = "kubectl get nodes -o wide --kubeconfig=" + k3s_clusterfilepath
+    cmd = f"kubectl get nodes -o wide --kubeconfig={k3s_clusterfilepath}"
     print(run_command(cmd))
-    cmd = "kubectl get pods -A -o wide --kubeconfig=" + k3s_clusterfilepath
+    cmd = f"kubectl get pods -A -o wide --kubeconfig={k3s_clusterfilepath}"
     print(run_command(cmd))
     return aws_nodes, client, k3s_clusterfilepath
 
@@ -105,28 +105,26 @@ def create_multiple_control_cluster():
     global RANCHER_EXTERNAL_DB_VERSION
     global RANCHER_DB_GROUP_NAME
     k3s_kubeconfig_file = "k3s_kubeconfig.yaml"
-    k3s_clusterfilepath = DATA_SUBDIR + "/" + k3s_kubeconfig_file
+    k3s_clusterfilepath = f"{DATA_SUBDIR}/{k3s_kubeconfig_file}"
 
-    tf_dir = DATA_SUBDIR + "/" + "terraform/k3s/master"
+    tf_dir = f"{DATA_SUBDIR}/terraform/k3s/master"
     keyPath = os.path.abspath('.') + '/.ssh/' + AWS_SSH_KEY_NAME
     os.chmod(keyPath, 0o400)
-    no_of_servers = int(RANCHER_K3S_NO_OF_SERVER_NODES)
-    no_of_servers = no_of_servers - 1
-
+    no_of_servers = int(RANCHER_K3S_NO_OF_SERVER_NODES) - 1
     if RANCHER_EXTERNAL_DB == "MariaDB":
         RANCHER_EXTERNAL_DB_VERSION = "10.3.20" if not RANCHER_EXTERNAL_DB_VERSION \
             else RANCHER_EXTERNAL_DB_VERSION
         RANCHER_DB_GROUP_NAME = "mariadb10.3" if not RANCHER_DB_GROUP_NAME \
             else RANCHER_DB_GROUP_NAME
-    elif RANCHER_EXTERNAL_DB == "postgres":
-        RANCHER_EXTERNAL_DB_VERSION = "11.5" if not RANCHER_EXTERNAL_DB_VERSION \
-            else RANCHER_EXTERNAL_DB_VERSION
-        RANCHER_DB_GROUP_NAME = "postgres11" if not RANCHER_DB_GROUP_NAME \
-            else RANCHER_DB_GROUP_NAME
     elif RANCHER_EXTERNAL_DB == "aurora-mysql":
         RANCHER_EXTERNAL_DB_VERSION = "5.7.mysql_aurora.2.09.0" if not RANCHER_EXTERNAL_DB_VERSION \
             else RANCHER_EXTERNAL_DB_VERSION
         RANCHER_DB_GROUP_NAME = "aurora-mysql5.7" if not RANCHER_DB_GROUP_NAME \
+            else RANCHER_DB_GROUP_NAME
+    elif RANCHER_EXTERNAL_DB == "postgres":
+        RANCHER_EXTERNAL_DB_VERSION = "11.5" if not RANCHER_EXTERNAL_DB_VERSION \
+            else RANCHER_EXTERNAL_DB_VERSION
+        RANCHER_DB_GROUP_NAME = "postgres11" if not RANCHER_DB_GROUP_NAME \
             else RANCHER_DB_GROUP_NAME
     else:
         RANCHER_EXTERNAL_DB_VERSION = "5.7" if not RANCHER_EXTERNAL_DB_VERSION \
@@ -169,7 +167,7 @@ def create_multiple_control_cluster():
     print(tf.apply("--auto-approve"))
 
     if int(RANCHER_K3S_NO_OF_WORKER_NODES) > 0:
-        tf_dir = DATA_SUBDIR + "/" + "terraform/k3s/worker"
+        tf_dir = f"{DATA_SUBDIR}/terraform/k3s/worker"
         tf = Terraform(working_dir=tf_dir,
                        variables={'region': RANCHER_REGION,
                                   'vpc_id': RANCHER_VPC_ID,
@@ -195,7 +193,7 @@ def create_multiple_control_cluster():
         tf.plan(out="plan_worker.out")
         print(tf.apply("--auto-approve"))
 
-    cmd = "cp /tmp/" + RANCHER_HOSTNAME_PREFIX + "_kubeconfig " + k3s_clusterfilepath
+    cmd = f"cp /tmp/{RANCHER_HOSTNAME_PREFIX}_kubeconfig {k3s_clusterfilepath}"
     os.system(cmd)
     is_file = os.path.isfile(k3s_clusterfilepath)
     assert is_file
@@ -203,9 +201,9 @@ def create_multiple_control_cluster():
     with open(k3s_clusterfilepath, 'r') as f:
         print(f.read())
     print("K3s Cluster Created")
-    cmd = "kubectl get nodes -o wide --kubeconfig=" + k3s_clusterfilepath
+    cmd = f"kubectl get nodes -o wide --kubeconfig={k3s_clusterfilepath}"
     print(run_command(cmd))
-    cmd = "kubectl get pods -o wide -A --kubeconfig=" + k3s_clusterfilepath
+    cmd = f"kubectl get pods -o wide -A --kubeconfig={k3s_clusterfilepath}"
     print(run_command(cmd))
     return k3s_clusterfilepath
 
@@ -218,7 +216,7 @@ def create_rancher_cluster(client, k3s_clusterfilepath):
     cluster = client.create_cluster(name=clustername)
     cluster_token = create_custom_host_registration_token(client, cluster)
     command = cluster_token.insecureCommand
-    finalimportcommand = command + " --kubeconfig " + k3s_clusterfilepath
+    finalimportcommand = f"{command} --kubeconfig {k3s_clusterfilepath}"
 
     result = run_command(finalimportcommand)
 
@@ -241,7 +239,7 @@ def create_nodes():
             random_test_name("testcustom-k3s"+"-"+HOST_NAME))
     assert len(aws_nodes) == int(RANCHER_K3S_NO_OF_WORKER_NODES)
     for aws_node in aws_nodes:
-        print("AWS NODE PUBLIC IP {}".format(aws_node.public_ip_address))
+        print(f"AWS NODE PUBLIC IP {aws_node.public_ip_address}")
     return aws_nodes
 
 
@@ -293,8 +291,7 @@ def verify_cluster_health(master):
 
 
 def create_kube_config_file(kubeconfig, k3s_kubeconfig_file):
-    k3s_clusterfilepath = DATA_SUBDIR + "/" + k3s_kubeconfig_file
-    f = open(k3s_clusterfilepath, "w")
-    f.write(kubeconfig)
-    f.close()
+    k3s_clusterfilepath = f"{DATA_SUBDIR}/{k3s_kubeconfig_file}"
+    with open(k3s_clusterfilepath, "w") as f:
+        f.write(kubeconfig)
     return k3s_clusterfilepath

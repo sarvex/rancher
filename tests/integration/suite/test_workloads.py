@@ -359,19 +359,21 @@ def test_perform_workload_action_read_only(admin_mc, admin_pc, remove_resource,
 
     # Create a read-only user binding.
     prtb1 = admin_mc.client.create_project_role_template_binding(
-        name="prtb-" + random_str(),
+        name=f"prtb-{random_str()}",
         userId=user.user.id,
         projectId=project.id,
-        roleTemplateId="read-only")
+        roleTemplateId="read-only",
+    )
     remove_resource(prtb1)
     wait_until_available(user.client, project)
 
     # Then, create a member user binding.
     prtb2 = admin_mc.client.create_project_role_template_binding(
-        name="prtb-" + random_str(),
+        name=f"prtb-{random_str()}",
         userId=user_member.user.id,
         projectId=project.id,
-        roleTemplateId="project-member")
+        roleTemplateId="project-member",
+    )
     remove_resource(prtb2)
     wait_until_available(user_member.client, project)
     user_pc = user_project_client(user, project)

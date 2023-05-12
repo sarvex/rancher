@@ -8,10 +8,11 @@ def test_logging_test_action(admin_mc, admin_pc, user_mc, remove_resource):
     able to perform a logging test.
     """
     prtb = admin_mc.client.create_project_role_template_binding(
-        name="prtb-" + random_str(),
+        name=f"prtb-{random_str()}",
         userId=user_mc.user.id,
         projectId=admin_pc.project.id,
-        roleTemplateId="read-only")
+        roleTemplateId="read-only",
+    )
     remove_resource(prtb)
 
     # use logEndpoint from admin client to get action not available to user

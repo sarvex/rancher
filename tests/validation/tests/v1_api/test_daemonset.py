@@ -17,7 +17,7 @@ def test_daemonset():
     template["spec"]["template"]["spec"]["containers"][0]["image"] = TEST_IMAGE_V1
     template["spec"]["template"]["spec"]["containers"][0]["name"] = name
     # set label and selector
-    label_value = "apps.daemonset-{}-{}".format(ns.id, name)
+    label_value = f"apps.daemonset-{ns.id}-{name}"
     labels = template["spec"]["template"]["metadata"]["labels"]
     labels["workload.user.cattle.io/workloadselector"] = label_value
     matches = template["spec"]["selector"]["matchLabels"]
@@ -44,9 +44,8 @@ def validate_daemonset(client, daemonset):
     node_count = len(get_worker_node(client))
     # Rancher Dashboard gets pods by passing the label selector
     label_key = 'workload.user.cattle.io/workloadselector'
-    label_value = 'apps.daemonset-{}-{}'.format(namespace, name)
-    pods = client.list_pod(
-        labelSelector='{}={}'.format(label_key, label_value))
+    label_value = f'apps.daemonset-{namespace}-{name}'
+    pods = client.list_pod(labelSelector=f'{label_key}={label_value}')
     assert "data" in pods.keys(), "failed to get pods"
     assert len(pods.data) == node_count, "wrong number of pods"
     for pod in pods.data:

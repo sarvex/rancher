@@ -49,15 +49,23 @@ def test_install_rbac_1(test_name, cloud_provider, rke_client, kubectl):
         "Should not be able to get pods outside of defined user1 namespace")
 
     # verify create fails as user for any namespace
-    result = kubectl.run(test_name + '-pod2', image='nginx', as_user='user1',
-                         namespace='outside-role')
+    result = kubectl.run(
+        f'{test_name}-pod2',
+        image='nginx',
+        as_user='user1',
+        namespace='outside-role',
+    )
     assert result.ok is False, (
         "'user1' should not be able to create pods in other namespaces:\n{0}"
         .format(result.stdout + result.stderr))
     assert "cannot create" in result.stdout + result.stderr
 
-    result = kubectl.run(test_name + '-pod3', image='nginx', as_user='user1',
-                         namespace='default')
+    result = kubectl.run(
+        f'{test_name}-pod3',
+        image='nginx',
+        as_user='user1',
+        namespace='default',
+    )
     assert result.ok is False, (
         "'user1' should not be able to create pods in its own namespace:\n{0}"
         .format(result.stdout + result.stderr))

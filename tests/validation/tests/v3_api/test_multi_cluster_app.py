@@ -34,11 +34,12 @@ PROJECT_ROLE = ["project-member"]
 CATALOG_URL = "https://github.com/rancher/integration-test-charts.git"
 BRANCH = "validation-tests"
 CATALOG_NAME = random_test_name("test-catalog")
-WORDPRESS_TEMPLATE_VID_738 = \
-    "cattle-global-data:" + CATALOG_NAME + "-wordpress-7.3.8"
-MYSQL_TEMPLATE_VID_131 = "cattle-global-data:" + CATALOG_NAME + "-mysql-1.3.1"
-MYSQL_TEMPLATE_VID_132 = "cattle-global-data:" + CATALOG_NAME + "-mysql-1.3.2"
-GRAFANA_TEMPLATE_VID = "cattle-global-data:" + CATALOG_NAME + "-grafana-3.8.6"
+WORDPRESS_TEMPLATE_VID_738 = (
+    f"cattle-global-data:{CATALOG_NAME}-wordpress-7.3.8"
+)
+MYSQL_TEMPLATE_VID_131 = f"cattle-global-data:{CATALOG_NAME}-mysql-1.3.1"
+MYSQL_TEMPLATE_VID_132 = f"cattle-global-data:{CATALOG_NAME}-mysql-1.3.2"
+GRAFANA_TEMPLATE_VID = f"cattle-global-data:{CATALOG_NAME}-grafana-3.8.6"
 WORDPRESS_EXTID = create_catalog_external_id(CATALOG_NAME,
                                              "wordpress", "7.3.8")
 MYSQL_EXTERNALID_131 = create_catalog_external_id(CATALOG_NAME,
@@ -62,9 +63,9 @@ skip_test_rolling_update = pytest.mark.skipif(
 def test_multi_cluster_app_create():
     client = get_user_client()
     assert_if_valid_cluster_count()
-    targets = []
-    for project_id in project:
-        targets.append({"projectId": project_id, "type": "target"})
+    targets = [
+        {"projectId": project_id, "type": "target"} for project_id in project
+    ]
     answer_values = get_defaut_question_answers(client, WORDPRESS_EXTID)
     mcapp = client.create_multiClusterApp(
         templateVersionId=WORDPRESS_TEMPLATE_VID_738,
@@ -80,9 +81,9 @@ def test_multi_cluster_app_create():
 def test_multi_cluster_app_edit_template_upgrade():
     client = get_user_client()
     assert_if_valid_cluster_count()
-    targets = []
-    for project_id in project:
-        targets.append({"projectId": project_id, "type": "target"})
+    targets = [
+        {"projectId": project_id, "type": "target"} for project_id in project
+    ]
     answer_values = \
         get_defaut_question_answers(client, MYSQL_EXTERNALID_131)
     mcapp = client.create_multiClusterApp(
@@ -107,9 +108,9 @@ def test_multi_cluster_app_edit_template_upgrade():
 
 def test_multi_cluster_app_delete():
     assert_if_valid_cluster_count()
-    targets = []
-    for project_id in project:
-        targets.append({"projectId": project_id, "type": "target"})
+    targets = [
+        {"projectId": project_id, "type": "target"} for project_id in project
+    ]
     client = get_user_client()
     answer_values = get_defaut_question_answers(client, MYSQL_EXTERNALID_131)
     mcapp = client.create_multiClusterApp(
@@ -125,9 +126,7 @@ def test_multi_cluster_app_delete():
 
 def test_multi_cluster_app_template_rollback():
     assert_if_valid_cluster_count()
-    targets = []
-    for projectid in project:
-        targets.append({"projectId": projectid, "type": "target"})
+    targets = [{"projectId": projectid, "type": "target"} for projectid in project]
     client = get_user_client()
     answer_values = get_defaut_question_answers(client, MYSQL_EXTERNALID_131)
     mcapp = client.create_multiClusterApp(
@@ -210,7 +209,7 @@ def test_multi_cluster_upgrade_and_delete_target():
         "did not start with 2 targets"
     project_client = project_detail["p_client0"]
     app = mcapp.targets[0].projectId.split(":")
-    app1id = app[1] + ":" + mcapp.targets[0].appId
+    app1id = f"{app[1]}:{mcapp.targets[0].appId}"
     client.action(obj=mcapp, action_name="removeProjects",
                   projects=[project_id])
     mcapp = client.reload(mcapp)
@@ -223,9 +222,7 @@ def test_multi_cluster_upgrade_and_delete_target():
 
 def test_multi_cluster_role_change():
     assert_if_valid_cluster_count()
-    targets = []
-    for projectid in project:
-        targets.append({"projectId": projectid, "type": "target"})
+    targets = [{"projectId": projectid, "type": "target"} for projectid in project]
     client = get_user_client()
     original_role = ["project-member"]
     answer_values = get_defaut_question_answers(client, GRAFANA_EXTERNALID)
@@ -239,7 +236,6 @@ def test_multi_cluster_role_change():
         mcapp = wait_for_mcapp_to_active(client, mcapp, 10)
     except AssertionError:
         print("expected failure as project member")
-        pass  # expected fail
     mcapp = client.update(mcapp, roles=["cluster-owner"])
     client.reload(mcapp)
     mcapp = wait_for_mcapp_to_active(client, mcapp)
@@ -249,9 +245,7 @@ def test_multi_cluster_role_change():
 
 def test_multi_cluster_project_answer_override():
     assert_if_valid_cluster_count()
-    targets = []
-    for projectid in project:
-        targets.append({"projectId": projectid, "type": "target"})
+    targets = [{"projectId": projectid, "type": "target"} for projectid in project]
     client = get_user_client()
     answer_values = get_defaut_question_answers(client, MYSQL_EXTERNALID_131)
     mcapp = client.create_multiClusterApp(
@@ -269,8 +263,7 @@ def test_multi_cluster_project_answer_override():
             "values": {
                 "mysqlUser": "test_override"}
     }
-    mysql_override = []
-    mysql_override.extend([{"values": answer_values}, answers_override])
+    mysql_override = [{"values": answer_values}, answers_override]
     mcapp = client.update(mcapp,
                           roles=PROJECT_ROLE,
                           answers=mysql_override)
@@ -300,9 +293,7 @@ def test_multi_cluster_cluster_answer_override():
     project_detail["project2"] = p3
     project[p3.id] = project_detail
     client = global_client["client"]
-    targets = []
-    for projectid in project:
-        targets.append({"projectId": projectid, "type": "target"})
+    targets = [{"projectId": projectid, "type": "target"} for projectid in project]
     answer_values = get_defaut_question_answers(client, MYSQL_EXTERNALID_131)
     mcapp = client.create_multiClusterApp(
         templateVersionId=MYSQL_TEMPLATE_VID_131,
@@ -319,9 +310,7 @@ def test_multi_cluster_cluster_answer_override():
         "values": {
             "mysqlUser": "test_override"}
     }
-    mysql_override_cluster = []
-    mysql_override_cluster.extend([{"values": answer_values},
-                                   answers_override_cluster])
+    mysql_override_cluster = [{"values": answer_values}, answers_override_cluster]
     clusterId_answer_override = project_detail["c0_id"]
     mcapp = client.update(mcapp,
                           roles=PROJECT_ROLE,
@@ -337,9 +326,7 @@ def test_multi_cluster_cluster_answer_override():
 
 def test_multi_cluster_all_answer_override():
     assert_if_valid_cluster_count()
-    targets = []
-    for projectid in project:
-        targets.append({"projectId": projectid, "type": "target"})
+    targets = [{"projectId": projectid, "type": "target"} for projectid in project]
     client = get_user_client()
     answer_values = get_defaut_question_answers(client, MYSQL_EXTERNALID_131)
     mcapp = client.create_multiClusterApp(
@@ -365,9 +352,7 @@ def test_multi_cluster_all_answer_override():
 @skip_test_rolling_update
 def test_multi_cluster_rolling_upgrade():
     assert_if_valid_cluster_count()
-    targets = []
-    for projectid in project:
-        targets.append({"projectId": projectid, "type": "target"})
+    targets = [{"projectId": projectid, "type": "target"} for projectid in project]
     client = get_user_client()
     answer_values = get_defaut_question_answers(client, MYSQL_EXTERNALID_131)
     mcapp = client.create_multiClusterApp(
@@ -393,7 +378,7 @@ def test_multi_cluster_rolling_upgrade():
     for i in range(0, len(mcapp.targets)):
         app_id = mcapp.targets[i].appId
         assert app_id is not None, "app_id is None"
-        project_client = project_detail["p_client" + str(i)]
+        project_client = project_detail[f"p_client{str(i)}"]
         app_detail = project_client.list_app(id=app_id).data[0]
         app_state.append(app_detail.state)
         if app_detail.state == "active":
@@ -485,7 +470,7 @@ def validate_multi_cluster_app_cluster_wordpress(multiclusterapp):
     for i in range(0, len(multiclusterapp.targets)):
         app_id = multiclusterapp.targets[i].appId
         assert app_id is not None, "app_id is None"
-        project_client = project_detail["p_client"+str(i)]
+        project_client = project_detail[f"p_client{str(i)}"]
         wait_for_app_to_active(project_client, app_id)
         validate_app_version(project_client, multiclusterapp, app_id)
         validate_response_app_endpoint(project_client, app_id)
@@ -495,7 +480,7 @@ def validate_multi_cluster_app_cluster(multiclusterapp):
     for i in range(0, len(multiclusterapp.targets)):
         app_id = multiclusterapp.targets[i].appId
         assert app_id is not None, "app_id is None"
-        project_client = project_detail["p_client"+str(i)]
+        project_client = project_detail[f"p_client{str(i)}"]
         wait_for_app_to_active(project_client, app_id)
         validate_app_version(project_client, multiclusterapp, app_id)
 
@@ -511,16 +496,17 @@ def delete_multi_cluster_app(multiclusterapp, validation=False):
         for i in range(1, len(multiclusterapp.targets)):
             app_id = multiclusterapp.targets[i].appId
             assert app_id is not None, "app_id is None"
-            project_client = project_detail["p_client" + str(i)]
+            project_client = project_detail[f"p_client{str(i)}"]
             validate_app_deletion(project_client, app_id)
 
 
 def validate_app_version(project_client, multiclusterapp, app_id):
     temp_version = multiclusterapp.templateVersionId
     app = temp_version.split(":")[1].split("-")
-    catalog_name = app[0] + "-" + app[1] + "-" + app[2]
-    mcapp_template_version = "catalog://?catalog=" + catalog_name + \
-                             "&template=" + app[3] + "&version=" + app[4]
+    catalog_name = f"{app[0]}-{app[1]}-{app[2]}"
+    mcapp_template_version = (
+        f"catalog://?catalog={catalog_name}&template={app[3]}&version={app[4]}"
+    )
     app_template_version = \
         project_client.list_app(name=app_id).data[0].externalId
     assert mcapp_template_version == app_template_version, \
@@ -536,19 +522,19 @@ def return_application_status_and_upgrade(client1, app_id1, client2, app_id2):
         and application1.answers["mysqlUser"] == "admin1234"
     b = application2.state == "active" \
         and application2.answers["mysqlUser"] == "admin1234"
-    return a is True and b is not True
+    return a and not b
 
 
 def validate_app_upgrade_mca(multiclusterapp):
     for i in range(0, len(multiclusterapp.targets)):
-        project_client = project_detail["p_client" + str(i)]
+        project_client = project_detail[f"p_client{str(i)}"]
         app = multiclusterapp.targets[0].projectId.split(":")
-        appid = app[1] + ":" + multiclusterapp.targets[i].appId
+        appid = f"{app[1]}:{multiclusterapp.targets[i].appId}"
         temp_version = multiclusterapp.templateVersionId
         app = temp_version.split(":")[1].split("-")
-        mcapp_template_version = "catalog://?catalog=" + app[0] + \
-                                 "&template=" + app[1] + "&version=" \
-                                 + app[2]
+        mcapp_template_version = (
+            f"catalog://?catalog={app[0]}&template={app[1]}&version={app[2]}"
+        )
         app_template_version = \
             project_client.list_app(id=appid).data[0].externalId
         assert mcapp_template_version == app_template_version, \
@@ -559,17 +545,17 @@ def validate_deletion_mca(multiclusterapp):
     for i in range(0, len(multiclusterapp.targets)):
         app_id = multiclusterapp.targets[i].appId
         assert app_id is not None, "app_id is None"
-        project_client = project_detail["p_client"+str(i)]
+        project_client = project_detail[f"p_client{str(i)}"]
         app = multiclusterapp.targets[i].projectId.split(":")
-        app1id = app[1] + ":" + multiclusterapp.targets[i].appId
+        app1id = f"{app[1]}:{multiclusterapp.targets[i].appId}"
         validate_app_deletion(project_client, app1id)
 
 
 def validate_all_answer_override_mca(multiclusterapp):
     for i in range(0, len(multiclusterapp.targets)):
-        project_client = project_detail["p_client" + str(i)]
+        project_client = project_detail[f"p_client{str(i)}"]
         app = multiclusterapp.targets[0].projectId.split(":")
-        appid = app[1] + ":" + multiclusterapp.targets[i].appId
+        appid = f"{app[1]}:{multiclusterapp.targets[i].appId}"
         hold = multiclusterapp['answers'][0]
         val = hold["values"]
         app_answers = \
@@ -581,24 +567,20 @@ def validate_all_answer_override_mca(multiclusterapp):
 def validate_answer_override(multiclusterapp, id,
                              answers_override, cluster=True):
     for i in range(0, len(multiclusterapp.targets)):
-        project_client = project_detail["p_client"+str(i)]
+        project_client = project_detail[f"p_client{str(i)}"]
         app_id = multiclusterapp.targets[i].appId
         target_project_id = multiclusterapp.targets[i].projectId
         target_clusterId = target_project_id.split(":")[0]
         app_answers = project_client.list_app(id=app_id).data[0].answers
-        if not cluster:
-            if target_project_id == id:
-                assert answers_override["values"]["mysqlUser"] == \
-                       app_answers.get("mysqlUser"), \
-                       "Answers are not available on the expected project"
-            else:
-                assert app_answers.get("mysqlUser") == "admin", \
-                    "answers should not have changed"
+        if (
+            not cluster
+            and target_project_id == id
+            or cluster
+            and target_clusterId == id
+        ):
+            assert answers_override["values"]["mysqlUser"] == \
+                   app_answers.get("mysqlUser"), \
+                   "Answers are not available on the expected project"
         else:
-            if target_clusterId == id:
-                assert answers_override["values"]["mysqlUser"] == \
-                       app_answers.get("mysqlUser"), \
-                       "Answers are not available on the expected project"
-            else:
-                assert app_answers.get("mysqlUser") == "admin", \
-                    "answers should not have changed"
+            assert app_answers.get("mysqlUser") == "admin", \
+                "answers should not have changed"

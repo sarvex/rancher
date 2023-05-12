@@ -29,7 +29,7 @@ rbac_role_list = [
 def test_rbac_pv_create(role, remove_resource):
     nfs_ip = namespace["nfs_ip"]
     cluster = namespace["cluster"]
-    url = CATTLE_TEST_URL + "/v3/clusters/" + cluster.id + "/persistentvolume"
+    url = f"{CATTLE_TEST_URL}/v3/clusters/{cluster.id}/persistentvolume"
     if (role == CLUSTER_OWNER):
         user_token = rbac_get_user_token_by_role(role)
         # Persistent volume can be created only using cluster client
@@ -41,9 +41,11 @@ def test_rbac_pv_create(role, remove_resource):
         # Other user clients do not have attribute to create persistent volume
         # Hence a post request is made as below
         user_token = rbac_get_user_token_by_role(role)
-        headers = {"Content-Type": "application/json",
-                   "Accept": "application/json",
-                   "Authorization": "Bearer " + user_token}
+        headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "Authorization": f"Bearer {user_token}",
+        }
         pv_config = {"type": "persistentVolume",
                      "accessModes": ["ReadWriteOnce"],
                      "name": "testpv",
@@ -76,13 +78,12 @@ def test_rbac_pv_list(role, remove_resource):
     owner_clusterclient = get_cluster_client_for_token(cluster, owner_token)
     pv = create_pv(owner_clusterclient, nfs_ip)
     pvname = pv['name']
-    url = CATTLE_TEST_URL + "/v3/cluster/" + cluster.id +\
-        "/persistentvolumes/" + pvname
+    url = f"{CATTLE_TEST_URL}/v3/cluster/{cluster.id}/persistentvolumes/{pvname}"
 
     headers = {
         "Content-Type": "application/json",
         "Accept": "application/json",
-        "Authorization": "Bearer " + user_token
+        "Authorization": f"Bearer {user_token}",
     }
     response = requests.get(url, verify=False,
                             headers=headers)
@@ -436,23 +437,22 @@ def delete_pvc(client, pvc, ns):
     client.delete(pvc)
     # Sleep to allow PVC to be deleted
     time.sleep(5)
-    timeout = 30
     pvcdict = client.list_persistentVolumeClaim(name=pvcname)
     start = time.time()
     if len(pvcdict.get('data')) > 0:
         testdata = pvcdict.get('data')
         print(testdata)
+        timeout = 30
         while pvcname in testdata[0]:
             if time.time() - start > timeout:
                 raise AssertionError("Timed out waiting for deletion")
             time.sleep(.5)
             pvcdict = client.list_persistentVolumeClaim(name=pvcname)
             testdata = pvcdict.get('data')
-        assert True
     assert len(pvcdict.get('data')) == 0, "Failed to delete the PVC"
 
     # Verify pvc is deleted by "kubectl get pvc" command
-    command = "get pvc {} --namespace {}".format(pvc['name'], ns.name)
+    command = f"get pvc {pvc['name']} --namespace {ns.name}"
     print("Command to obtain the pvc")
     print(command)
     result = execute_kubectl_cmd(command, json_out=False, stderr=True)
@@ -469,24 +469,23 @@ def delete_pv(cluster_client, pv):
     cluster_client.delete(pv)
     # Sleep to allow PVC to be deleted
     time.sleep(5)
-    timeout = 30
     pvdict = cluster_client.list_persistent_volume(name=pvname)
     print(pvdict)
     start = time.time()
     if len(pvdict.get('data')) > 0:
         testdata = pvdict.get('data')
         print(testdata)
+        timeout = 30
         while pvname in testdata[0]:
             if time.time() - start > timeout:
                 raise AssertionError("Timed out waiting for deletion")
             time.sleep(.5)
             pvcdict = cluster_client.list_persistent_volume(name=pvname)
             testdata = pvcdict.get('data')
-        assert True
     assert len(pvdict.get('data')) == 0, "Failed to delete the PV"
 
     # Verify pv is deleted by "kubectl get pv" command
-    command = "get pv {} ".format(pv['name'])
+    command = f"get pv {pv['name']} "
     print("Command to obtain the pvc")
     print(command)
     result = execute_kubectl_cmd(command, json_out=False, stderr=True)
