@@ -78,7 +78,7 @@ require (
 	github.com/rancher/wrangler v0.6.2
 	github.com/sirupsen/logrus v1.8.1
 	github.com/urfave/cli v1.22.2
-	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83
+	golang.org/x/crypto v0.17.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v1.20.5
 	k8s.io/apimachinery v1.20.5
